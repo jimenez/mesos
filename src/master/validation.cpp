@@ -51,6 +51,39 @@ static bool invalid(char c)
   return iscntrl(c) || c == '/' || c == '\\';
 }
 
+namespace http {
+
+Option<Error> validateHeader(const process::http::Request& request)
+{
+  Option<string> accept = request.headers.get("Accept");
+  Option<string> connection = request.headers.get("Connection");
+  Option<string> content = request.headers.get("Content-Type");
+
+  if (accept.isNone()) {
+    return Error("Missing accept header");
+  }
+  if (connection.isNone()) {
+    return Error("Missing connection header");
+  }
+  if (content.isNone()) {
+    return Error("Missing content-type header");
+  }
+  return None();
+}
+
+
+Option<Error> validateHTTPRequest(const process::http::Request& request)
+{
+  Option<Error> error = validateHeader(request);
+  if (error.isSome()) {
+    return error;
+  }
+  return None();
+}
+
+} // namespace http {
+
+
 namespace resource {
 
 // Validates the ReservationInfos specified in the given resources (if

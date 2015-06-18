@@ -34,6 +34,14 @@ struct Framework;
 struct Slave;
 
 namespace validation {
+namespace http {
+
+Option<Error> validateHTTPRequest(const process::http::Request& request);
+
+Option<Error> validateHeader(const process::http::Request& request);
+
+} // namespace http {
+
 
 namespace resource {
 

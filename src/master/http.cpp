@@ -279,6 +279,13 @@ const string Master::Http::CALL_HELP = HELP(
 
 Future<Response> Master::Http::call(const Request& request) const
 {
+  if (request.method != "POST") {
+    return BadRequest("Expecting POST");
+  }
+  Option<Error> error = validation::http::validateHTTPRequest(request);
+  if (error.isSome()) {
+    return BadRequest();
+  }
   return Accepted();
 }
 

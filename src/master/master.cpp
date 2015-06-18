@@ -732,7 +732,7 @@ void Master::initialize()
 
   route("/call",
         Http::CALL_HELP,
-        [http](const http::Request& request) {
+        [http](const process::http::Request& request) {
           return http.call(request);
         });
   route("/health",
