@@ -215,36 +215,11 @@ public:
     }
 
     switch (call.type()) {
-      case Call::SUBSCRIBE: {
-        if (!call.framework_info().has_id() ||
-            call.framework_info().id() == "") {
-          RegisterFrameworkMessage message;
-          message.mutable_framework()->CopyFrom(call.framework_info());
-          send(master.get(), message);
-        } else {
-          ReregisterFrameworkMessage message;
-          message.mutable_framework()->CopyFrom(call.framework_info());
-          message.set_failover(failover);
-          send(master.get(), message);
-        }
-        break;
-      }
-
-      case Call::TEARDOWN: {
-        send(master.get(), call);
-        break;
-      }
-
       case Call::DECLINE: {
         if (!call.has_decline()) {
           drop(call, "Expecting 'decline' to be present");
           return;
         }
-        LaunchTasksMessage message;
-        message.mutable_framework_id()->CopyFrom(call.framework_info().id());
-        message.mutable_filters()->CopyFrom(call.decline().filters());
-        message.mutable_offer_ids()->CopyFrom(call.decline().offer_ids());
-        send(master.get(), message);
         break;
       }
 
@@ -253,14 +228,6 @@ public:
           drop(call, "Expecting 'accept' to be present");
           return;
         }
-        send(master.get(), call);
-        break;
-      }
-
-      case Call::REVIVE: {
-        ReviveOffersMessage message;
-        message.mutable_framework_id()->CopyFrom(call.framework_info().id());
-        send(master.get(), message);
         break;
       }
 
@@ -269,7 +236,6 @@ public:
           drop(call, "Expecting 'kill' to be present");
           return;
         }
-        send(master.get(), call);
         break;
       }
 
@@ -278,7 +244,6 @@ public:
           drop(call, "Expecting 'shutdown' to be present");
           return;
         }
-        send(master.get(), call);
         break;
       }
 
@@ -287,12 +252,6 @@ public:
           drop(call, "Expecting 'acknowledge' to be present");
           return;
         }
-        StatusUpdateAcknowledgementMessage message;
-        message.mutable_framework_id()->CopyFrom(call.framework_info().id());
-        message.mutable_slave_id()->CopyFrom(call.acknowledge().slave_id());
-        message.mutable_task_id()->CopyFrom(call.acknowledge().task_id());
-        message.set_uuid(call.acknowledge().uuid());
-        send(master.get(), message);
         break;
       }
 
@@ -301,8 +260,6 @@ public:
           drop(call, "Expecting 'reconcile' to be present");
           return;
         }
-
-        send(master.get(), call);
         break;
       }
 
@@ -311,12 +268,6 @@ public:
           drop(call, "Expecting 'message' to be present");
           return;
         }
-        FrameworkToExecutorMessage message;
-        message.mutable_slave_id()->CopyFrom(call.message().slave_id());
-        message.mutable_framework_id()->CopyFrom(call.framework_info().id());
-        message.mutable_executor_id()->CopyFrom(call.message().executor_id());
-        message.set_data(call.message().data());
-        send(master.get(), message);
         break;
       }
 
@@ -324,6 +275,7 @@ public:
         VLOG(1) << "Unexpected call " << stringify(call.type());
         break;
     }
+    send(master.get(), call);
   }
 
 protected:

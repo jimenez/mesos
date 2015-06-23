@@ -1613,7 +1613,12 @@ void Master::receive(
   // we handle them first and separately from other types of calls.
   switch (call.type()) {
     case scheduler::Call::SUBSCRIBE:
-      drop(from, call, "Unimplemented");
+      if (!call.framework_info().has_id() ||
+         call.framework_info().id() == "") {
+       registerFramework(from, call.framework_info());
+      } else {
+       reregisterFramework(from, call.framework_info(), call.framework_info().failover_timeout());
+      }
       return;
 
     default:
@@ -1639,49 +1644,71 @@ void Master::receive(
   // framework id is set and non-empty except for SUBSCRIBE call.
 
   switch (call.type()) {
-    case scheduler::Call::REVIVE:
-    case scheduler::Call::DECLINE:
-      drop(from, call, "Unimplemented");
+    case scheduler::Call::REVIVE: {
+      reviveOffers(from, call.framework_info().id());
       break;
+    }
 
-    case scheduler::Call::ACCEPT:
+    case scheduler::Call::DECLINE: {
+      if (!call.has_decline()) {
+       drop(call, "Expecting 'decline' to be present");
+       return;
+      }
+      launchTasks(from,
+		  call.framework_info().id(),
+		  call.decline().filters(),
+		  ,
+		  call.decline().offer_ids());
+      break;
+    }
+
+    case scheduler::Call::ACCEPT: {
       if (!call.has_accept()) {
         drop(from, call, "Expecting 'accept' to be present");
         return;
       }
       accept(framework, call.accept());
       break;
+    }
 
-    case scheduler::Call::RECONCILE:
+    case scheduler::Call::RECONCILE: {
       if (!call.has_reconcile()) {
         drop(from, call, "Expecting 'reconcile' to be present");
         return;
       }
       reconcile(framework, call.reconcile());
       break;
+    }
 
-    case scheduler::Call::SHUTDOWN:
+    case scheduler::Call::SHUTDOWN: {
       if (!call.has_shutdown()) {
         drop(from, call, "Expecting 'shutdown' to be present");
       }
       shutdown(framework, call.shutdown());
       break;
+    }
 
-    case scheduler::Call::KILL:
+    case scheduler::Call::KILL: {
       if (!call.has_kill()) {
         drop(from, call, "Expecting 'kill' to be present");
       }
       kill(framework, call.kill());
       break;
+    }
 
-    case scheduler::Call::ACKNOWLEDGE:
-    case scheduler::Call::MESSAGE:
+    case scheduler::Call::ACKNOWLEDGE: {
+      break;
+    }
+
+    case scheduler::Call::MESSAGE: {
       drop(from, call, "Unimplemented");
       break;
+    }
 
-    case scheduler::Call::TEARDOWN:
+    case scheduler::Call::TEARDOWN: {
       removeFramework(framework);
       break;
+    }
 
     default:
       drop(from, call, "Unknown call type");
