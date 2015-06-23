@@ -1617,7 +1617,9 @@ void Master::receive(
          call.framework_info().id() == "") {
        registerFramework(from, call.framework_info());
       } else {
-       reregisterFramework(from, call.framework_info(), call.framework_info().failover_timeout());
+       reregisterFramework(from,
+                           call.framework_info(),
+                           call.framework_info().failover_timeout());
       }
       return;
 
@@ -1651,14 +1653,14 @@ void Master::receive(
 
     case scheduler::Call::DECLINE: {
       if (!call.has_decline()) {
-       drop(call, "Expecting 'decline' to be present");
-       return;
+        drop(from, call, "Expecting 'decline' to be present");
+        return;
       }
       launchTasks(from,
-		  call.framework_info().id(),
-		  call.decline().filters(),
-		  ,
-		  call.decline().offer_ids());
+                  call.framework_info().id(),
+                  vector<TaskInfo>(),
+                  call.decline().filters(),
+                  google::protobuf::convert(call.decline().offer_ids()));
       break;
     }
 
@@ -1683,6 +1685,7 @@ void Master::receive(
     case scheduler::Call::SHUTDOWN: {
       if (!call.has_shutdown()) {
         drop(from, call, "Expecting 'shutdown' to be present");
+        return;
       }
       shutdown(framework, call.shutdown());
       break;
@@ -1691,17 +1694,37 @@ void Master::receive(
     case scheduler::Call::KILL: {
       if (!call.has_kill()) {
         drop(from, call, "Expecting 'kill' to be present");
+        return;
       }
       kill(framework, call.kill());
       break;
     }
 
     case scheduler::Call::ACKNOWLEDGE: {
+      if (!call.has_acknowledge()) {
+        drop(from, call, "Expecting 'acknowledge' to be present");
+        return;
+      }
+      statusUpdateAcknowledgement(
+          from,
+          call.acknowledge().slave_id(),
+          call.framework_info().id(),
+          call.acknowledge().task_id(),
+          call.acknowledge().uuid());
       break;
     }
 
     case scheduler::Call::MESSAGE: {
-      drop(from, call, "Unimplemented");
+      if (!call.has_message()) {
+        drop(from, call, "Expecting 'message' to be present");
+        return;
+      }
+      schedulerMessage(
+          from,
+          call.message().slave_id(),
+          call.framework_info().id(),
+          call.message().executor_id(),
+          call.message().data());
       break;
     }
 
