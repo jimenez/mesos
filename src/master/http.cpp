@@ -63,6 +63,7 @@ using process::HELP;
 using process::TLDR;
 using process::USAGE;
 
+using process::http::Accepted;
 using process::http::BadRequest;
 using process::http::InternalServerError;
 using process::http::NotFound;
@@ -288,6 +289,21 @@ void Master::Http::log(const Request& request)
             << (forwardedFor.isSome()
                 ? " with X-Forwarded-For='" + forwardedFor.get() + "'"
                 : "");
+}
+
+
+const string Master::Http::CALL_HELP = HELP(
+    TLDR(
+        "Call enpoint on the Mesos Master for schedulers API."),
+    USAGE(
+        "/master/call"),
+    DESCRIPTION(
+        "Returns 202 ACCEPTED iff the request is valid."));
+
+
+Future<Response> Master::Http::call(const Request& request) const
+{
+  return Accepted();
 }
 
 
