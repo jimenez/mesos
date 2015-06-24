@@ -1551,11 +1551,13 @@ libtestqos_controller_la_SOURCES =		\
 libtestqos_controller_la_CPPFLAGS = $(MESOS_CPPFLAGS)
 libtestqos_controller_la_LDFLAGS = $(MESOS_TEST_MODULE_LDFLAGS)
 
+<<<<<<< HEAD
 mesos_tests_SOURCES =						\
   tests/anonymous_tests.cpp					\
   tests/attributes_tests.cpp					\
   tests/authentication_tests.cpp				\
   tests/authorization_tests.cpp					\
+  tests/call_tests.cpp						\
   tests/containerizer.cpp					\
   tests/cram_md5_authentication_tests.cpp			\
   tests/credentials_tests.cpp					\

@@ -313,7 +313,7 @@ void Master::Http::log(const Request& request)
 }
 
 
-// TODO(ijiminez): Add some information or pointers to help
+// TODO(ijimenez): Add some information or pointers to help
 // users understand the HTTP Event/Call API.
 const string Master::Http::SCHEDULER_HELP = HELP(
     TLDR(
