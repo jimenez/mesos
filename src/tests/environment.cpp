@@ -204,6 +204,40 @@ private:
 };
 
 
+class PerfTestFilter : public TestFilter
+{
+public:
+  PerfTestFilter()
+  {
+#ifdef __linux__
+    perfError = os::system("perf help >&-") != 0;
+    if (perfError) {
+    std::cerr
+      << "-------------------------------------------------------------\n"
+      << "Perf was not found. We will not run any perf related tests\n"
+      << "-------------------------------------------------------------"
+      << std::endl;
+    }
+#else
+      perfError = true;
+      std::cerr
+        << "-------------------------------------------------------------\n"
+        << "Perf related tests will not run on non-linux systems\n"
+        << "-------------------------------------------------------------"
+        << std::endl;
+#endif // __linux__
+  }
+
+  bool disable(const ::testing::TestInfo* test) const
+  {
+    return matches(test, "Perf") && perfError;
+  }
+
+private:
+  bool perfError;
+};
+
+
 class BenchmarkFilter : public TestFilter
 {
 public:
@@ -332,6 +366,7 @@ Environment::Environment(const Flags& _flags) : flags(_flags)
   filters.push_back(Owned<TestFilter>(new DockerFilter()));
   filters.push_back(Owned<TestFilter>(new BenchmarkFilter()));
   filters.push_back(Owned<TestFilter>(new NetworkIsolatorTestFilter()));
+  filters.push_back(Owned<TestFilter>(new PerfTestFilter()));
 
   // Construct the filter string to handle system or platform specific tests.
   ::testing::UnitTest* unitTest = ::testing::UnitTest::GetInstance();

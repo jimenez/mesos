@@ -1118,6 +1118,25 @@ has been correctly installed.
   fi
 fi
 
+# Check Perf installation for tests dependecy
+AC_CHECK_PROG([PERF], [perf], [true])
+
+AS_IF([test "x$OS_NAME" = "xdarwin"],
+      [AC_MSG_NOTICE([
+-------------------------------------------------------------------
+Perf dependant tests will be disable as they are not supported on
+MAC OS X.
+-------------------------------------------------------------------
+      ])],
+      [AS_IF([test "x$PERF" = "x"],
+             [AC_MSG_WARN([
+-------------------------------------------------------------------
+Can not find perf on your path. Perf related tests will not run.
+-------------------------------------------------------------------])],
+             [AC_MSG_RESULT([yes])]
+      )])
+
+
 AM_CONDITIONAL([HAS_JAVA], [test "x$has_java" = "xyes"])
 
 
