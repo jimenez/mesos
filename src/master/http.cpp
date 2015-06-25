@@ -93,7 +93,6 @@ using process::http::Request;
 // TODO(bmahler): Kill these in favor of automatic Proto->JSON Conversion (when
 // it becomes available).
 
-
 // Returns a JSON object modeled on an Offer.
 JSON::Object model(const Offer& offer)
 {
@@ -291,6 +290,32 @@ void Master::Http::log(const Request& request)
                 : "");
 }
 
+struct CallHttpRequest
+{
+  CallHttpRequest(const string& body);
+  virtual ~CallHttpRequest();
+  virtual Future<Response> validate() = 0;
+  scheduler::Call _call;
+}
+
+
+CallHttpRequest::CallHttpRequest(const Resquest& request):
+  _call(::protobuf::parse<scheduler::Call>(request.body))
+{
+}
+
+
+struct CallSubscribeRequest : CallHttpRequest
+{
+  virtual Future<Response> validate();
+}
+
+
+Future<Response>  CallSubscribeRequest::validate()
+{
+
+}
+
 
 const string Master::Http::CALL_HELP = HELP(
     TLDR(
@@ -303,7 +328,13 @@ const string Master::Http::CALL_HELP = HELP(
 
 Future<Response> Master::Http::call(const Request& request) const
 {
-  return Accepted();
+  if (request.method != "POST") {
+    return BadRequest("Expecting POST");
+  }
+
+  CallHttpRequest callRequest(request.body);
+
+  return callRequest.validate();
 }
 
 
