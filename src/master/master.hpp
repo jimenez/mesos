@@ -1494,16 +1494,6 @@ private:
 };
 
 } // namespace master {
-
-class CallHttpRequest
-{
-public:
-  CallHttpRequest(const string& requestBody);
-  ~CallHttpRequest();
-}
-
-
-
 } // namespace internal {
 } // namespace mesos {
 

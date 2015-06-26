@@ -55,6 +55,7 @@
 
 #include "mesos/mesos.hpp"
 #include "mesos/resources.hpp"
+#include "mesos/scheduler.hpp"
 
 using process::Clock;
 using process::DESCRIPTION;
@@ -66,6 +67,7 @@ using process::USAGE;
 using process::http::Accepted;
 using process::http::BadRequest;
 using process::http::InternalServerError;
+using process::http::NotAcceptable;
 using process::http::NotFound;
 using process::http::OK;
 using process::http::TemporaryRedirect;
@@ -290,30 +292,26 @@ void Master::Http::log(const Request& request)
                 : "");
 }
 
-struct CallHttpRequest
+
+Option<Response>  validate_(const Request& request)
 {
-  CallHttpRequest(const string& body);
-  virtual ~CallHttpRequest();
-  virtual Future<Response> validate() = 0;
-  scheduler::Call _call;
-}
+  Option<string> _accept = request.headers.get("Accept");
+  Option<string> _connection = request.headers.get("Connection");
 
-
-CallHttpRequest::CallHttpRequest(const Resquest& request):
-  _call(::protobuf::parse<scheduler::Call>(request.body))
-{
-}
-
-
-struct CallSubscribeRequest : CallHttpRequest
-{
-  virtual Future<Response> validate();
-}
-
-
-Future<Response>  CallSubscribeRequest::validate()
-{
-
+  if (_accept.isNone()) {
+    return BadRequest("Missing accept header");
+  }
+  if (_connection.isNone()) {
+    return BadRequest("Missing connection header");
+  }
+  if (_accept.get() != "application/json" ||
+      _accept.get() != "application/x-protobuf") {
+    return NotAcceptable("Unsupported accept header");
+  }
+  if (_connection.get() != "keep-alive") {
+    return BadRequest("Unsupported connection header");
+  }
+  return None();
 }
 
 
@@ -332,9 +330,45 @@ Future<Response> Master::Http::call(const Request& request) const
     return BadRequest("Expecting POST");
   }
 
-  CallHttpRequest callRequest(request.body);
+  Result<Credential> credential = authenticate(request);
+  if (credential.isError()) {
+    return Unauthorized("Mesos master", credential.error());
+  }
 
-  return callRequest.validate();
+  Option<string> _content = request.headers.get("Content-Type");
+
+  if (_content.isNone()) {
+    return BadRequest("Missing content-type header");
+  }
+
+  if (_content.get() == "application/json") {
+    Try<JSON::Object> json = JSON::parse<JSON::Object>(request.body);
+    if (json.isError()) {
+      return BadRequest(json.error());
+    }
+    Try<scheduler::Call> _call = ::protobuf::parse<scheduler::Call>(json.get());
+  }
+  else if (_content.get() != "application/x-protobuf") {
+    _call.ParseFromString(request.body);
+  } else {
+    return BadRequest("Unsupported content-type header");
+  }
+
+  scheduler::Call _call;
+  Option<Response> response;
+  switch (_call.type()) {
+    case scheduler::Call::SUBSCRIBE: {
+      response = validate_(request);
+      break;
+    }
+    default:
+      break;
+  }
+
+  if (response.isSome()) {
+    return response.get();
+  }
+  return Accepted();
 }
 
 

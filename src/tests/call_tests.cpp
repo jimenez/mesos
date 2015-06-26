@@ -36,6 +36,8 @@ using std::string;
 
 using mesos::internal::master::Master;
 
+using mesos::scheduler::Call;
+
 using process::Future;
 using process::PID;
 
@@ -58,7 +60,7 @@ class CallTest : public MesosTest {};
 // 202 Accepted.
 
 // Testing route
-TEST_F(CallTest, CallEndpoint)
+TEST_F(CallTest, CallEndpointPost)
 {
   Try<PID<Master> > master = StartMaster();
   ASSERT_SOME(master);
@@ -72,6 +74,186 @@ TEST_F(CallTest, CallEndpoint)
   AWAIT_READY(response);
   AWAIT_EXPECT_RESPONSE_STATUS_EQ(Accepted().status, response);
 }
+
+
+TEST_F(CallTest, CallEndpointGet)
+{
+  Try<PID<Master> > master = StartMaster();
+  ASSERT_SOME(master);
+
+  Future<Response> response = process::http::get();
+
+  AWAIT_READY(response);
+  AWAIT_EXPECT_RESPONSE_STATUS_EQ(
+    BadRequest("Expecting POST").status, response);
+}
+
+
+TEST_F(HTTPCallTest, CallEndpointWrongHeaderContentType)
+{
+  Try<PID<Master>> master = StartMaster();
+  ASSERT_SOME(master);
+
+  hashmap<string, string> headers;
+  headers["Content-Type"] = "foo";
+
+  {
+    Call call;
+    call.mutable_framework_info()->CopyFrom(DEFAULT_FRAMEWORK_INFO);
+    // Setting arbitrary type since all types of Call must specify
+    // a Content-Type HTTP header.
+    call.set_type(Call::ACCEPT);
+  }
+
+  Future<Response> response = process::http::post(
+      master.get(),
+      "call",
+      headers,
+      call);
+
+  AWAIT_READY(response);
+  AWAIT_EXPECT_RESPONSE_STATUS_EQ(
+    BadRequest("Unsupported content-type header").status, response);
+}
+
+
+TEST_F(HTTPCallTest, CallEndpointMissingHeaderContentType)
+{
+  Try<PID<Master>> master = StartMaster();
+  ASSERT_SOME(master);
+
+  {
+    Call call;
+    call.mutable_framework_info()->CopyFrom(DEFAULT_FRAMEWORK_INFO);
+    // Setting arbitrary type
+    call.set_type(Call::ACCEPT);
+  }
+
+  Future<Response> response = process::http::post(
+      master.get(),
+      "call",
+      None(),
+      call);
+
+  AWAIT_READY(response);
+  AWAIT_EXPECT_RESPONSE_STATUS_EQ(
+    BadRequest("Missing content-type header").status, response);
+}
+
+
+TEST_F(HTTPCallTest, CallEndpointWrongHeaderAccept)
+{
+  Try<PID<Master>> master = StartMaster();
+  ASSERT_SOME(master);
+
+  hashmap<string, string> headers;
+  headers["Content-Type"] = "application/x-protobuf";
+  headers["Accept"] = "foo";
+  headers["Connection"] = "keep-alive";
+
+  {
+    Call call;
+    call.mutable_framework_info()->CopyFrom(DEFAULT_FRAMEWORK_INFO);
+    // Setting SUBSCRIBE type since it's the only Call that needs
+    // Accept HTTP header validation.
+    call.set_type(Call::SUBSCRIBE);
+  }
+
+  Future<Response> response = process::http::post(
+      master.get(),
+      "call",
+      headers);
+
+  AWAIT_READY(response);
+  AWAIT_EXPECT_RESPONSE_STATUS_EQ(
+    NotAcceptable("Unsupported accept header").status, response);
+}
+
+
+TEST_F(HTTPCallTest, CallEndpointMissingHeaderAccept)
+{
+  Try<PID<Master>> master = StartMaster();
+  ASSERT_SOME(master);
+
+  hashmap<string, string> headers;
+  headers["Content-Type"] = "application/x-protobuf";
+  headers["Connection"] = "keep-alive";
+
+  {
+    Call call;
+    call.mutable_framework_info()->CopyFrom(DEFAULT_FRAMEWORK_INFO);
+    // Setting SUBSCRIBE type since it's the only Call that needs
+    // Accept HTTP header validation.
+    call.set_type(Call::SUBSCRIBE);
+  }
+
+  Future<Response> response = process::http::post(
+      master.get(),
+      "call",
+      headers);
+
+  AWAIT_READY(response);
+  AWAIT_EXPECT_RESPONSE_STATUS_EQ(
+    BadRequest("Missing accept header").status, response);
+}
+
+
+TEST_F(HTTPCallTest, CallEndpointWrongHeaderConnection)
+{
+  Try<PID<Master>> master = StartMaster();
+  ASSERT_SOME(master);
+
+  hashmap<string, string> headers;
+  headers["Content-Type"];
+  headers["Connection"] = "foo";
+  headers["Accept"];
+
+  {
+    Call call;
+    call.mutable_framework_info()->CopyFrom(DEFAULT_FRAMEWORK_INFO);
+    // Setting SUBSCRIBE type since it's the only Call that needs
+    // Accept HTTP header validation.
+    call.set_type(Call::SUBSCRIBE);
+  }
+
+  Future<Response> response = process::http::post(
+      master.get(),
+      "call",
+      headers);
+
+  AWAIT_READY(response);
+  AWAIT_EXPECT_RESPONSE_STATUS_EQ(
+    BadRequest("Unsupported connection header").status, response);
+}
+
+
+TEST_F(HTTPCallTest, CallEndpointMissingHeaderConnection)
+{
+  Try<PID<Master>> master = StartMaster();
+  ASSERT_SOME(master);
+
+  hashmap<string, string> headers;
+  headers["Content-Type"];
+  headers["Accept"];
+
+  {
+    Call call;
+    call.mutable_framework_info()->CopyFrom(DEFAULT_FRAMEWORK_INFO);
+    // Setting SUBSCRIBE type since it's the only Call that needs
+    // Accept HTTP header validation.
+    call.set_type(Call::SUBSCRIBE);
+  }
+
+  Future<Response> response = process::http::post(
+      master.get(),
+      "call",
+      headers);
+
+  AWAIT_READY(response);
+  AWAIT_EXPECT_RESPONSE_STATUS_EQ(
+    BadRequest("Missing connection header").status, response);
+}
+
 
 } // namespace tests {
 } // namespace internal {
