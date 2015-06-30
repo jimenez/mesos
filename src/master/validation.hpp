@@ -24,6 +24,8 @@
 #include <stout/error.hpp>
 #include <stout/option.hpp>
 
+#include <process/http.hpp>
+
 namespace mesos {
 namespace internal {
 namespace master {
@@ -34,6 +36,14 @@ struct Framework;
 struct Slave;
 
 namespace validation {
+
+namespace http {
+
+Option<process::http::Response>  validate(
+    const process::http::Request& request);
+
+}
+
 
 namespace resource {
 

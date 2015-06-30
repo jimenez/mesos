@@ -52,6 +52,8 @@
 #include "logging/logging.hpp"
 
 #include "master/master.hpp"
+#include "master/http_constants.hpp"
+#include "master/validation.hpp"
 
 #include "mesos/mesos.hpp"
 #include "mesos/resources.hpp"
@@ -70,8 +72,10 @@ using process::http::InternalServerError;
 using process::http::NotAcceptable;
 using process::http::NotFound;
 using process::http::OK;
+using process::http::MethodNotAllowed;
 using process::http::TemporaryRedirect;
 using process::http::Unauthorized;
+using process::http::UnsupportedMediaType;
 
 using process::metrics::internal::MetricsProcess;
 
@@ -94,6 +98,7 @@ using process::http::Request;
 
 // TODO(bmahler): Kill these in favor of automatic Proto->JSON Conversion (when
 // it becomes available).
+
 
 // Returns a JSON object modeled on an Offer.
 JSON::Object model(const Offer& offer)
@@ -293,28 +298,6 @@ void Master::Http::log(const Request& request)
 }
 
 
-Option<Response>  validate_(const Request& request)
-{
-  Option<string> _accept = request.headers.get("Accept");
-  Option<string> _connection = request.headers.get("Connection");
-
-  if (_accept.isNone()) {
-    return BadRequest("Missing accept header");
-  }
-  if (_connection.isNone()) {
-    return BadRequest("Missing connection header");
-  }
-  if (_accept.get() != "application/json" ||
-      _accept.get() != "application/x-protobuf") {
-    return NotAcceptable("Unsupported accept header");
-  }
-  if (_connection.get() != "keep-alive") {
-    return BadRequest("Unsupported connection header");
-  }
-  return None();
-}
-
-
 const string Master::Http::CALL_HELP = HELP(
     TLDR(
         "Call enpoint on the Mesos Master for schedulers API."),
@@ -327,7 +310,8 @@ const string Master::Http::CALL_HELP = HELP(
 Future<Response> Master::Http::call(const Request& request) const
 {
   if (request.method != "POST") {
-    return BadRequest("Expecting POST");
+    return MethodNotAllowed("Expecting POST. Received " +
+                      request.method + " instead");
   }
 
   Result<Credential> credential = authenticate(request);
@@ -335,30 +319,43 @@ Future<Response> Master::Http::call(const Request& request) const
     return Unauthorized("Mesos master", credential.error());
   }
 
-  Option<string> _content = request.headers.get("Content-Type");
+  Option<string> contentType = request.headers.get("Content-Type");
 
-  if (_content.isNone()) {
-    return BadRequest("Missing content-type header");
+  if (contentType.isNone()) {
+    return BadRequest("Missing Content-Type header");
   }
 
-  if (_content.get() == "application/json") {
+  Option<scheduler::Call> call;
+
+  if (contentType.get() == APPLICATION_JSON) {
     Try<JSON::Object> json = JSON::parse<JSON::Object>(request.body);
     if (json.isError()) {
       return BadRequest(json.error());
     }
-    Try<scheduler::Call> _call = ::protobuf::parse<scheduler::Call>(json.get());
+
+    Try<scheduler::Call> call_ = ::protobuf::parse<scheduler::Call>(json.get());
+    if (call_.isError()) {
+      return BadRequest(call_.error());
+    }
+    call = call_.get();
   }
-  else if (_content.get() != "application/x-protobuf") {
-    _call.ParseFromString(request.body);
+  else if (contentType.get() == APPLICATION_PROTOBUF) {
+    scheduler::Call call_;
+    if (!call_.ParseFromString(request.body)) {
+      return BadRequest("Failed to parse body into Call");
+    }
+    call = call_;
   } else {
-    return BadRequest("Unsupported content-type header");
+    return UnsupportedMediaType("Unsupported '" + contentType.get() +
+                       "' Content-Type; Expecting " +
+                       APPLICATION_PROTOBUF + " or " +
+                       APPLICATION_JSON);
   }
 
-  scheduler::Call _call;
   Option<Response> response;
-  switch (_call.type()) {
+  switch (call.get().type()) {
     case scheduler::Call::SUBSCRIBE: {
-      response = validate_(request);
+      response = validation::http::validate(request);
       break;
     }
     default:

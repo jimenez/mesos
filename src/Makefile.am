@@ -370,6 +370,7 @@ libmesos_no_3rdparty_la_SOURCES =					\
 	master/detector.cpp						\
 	master/flags.cpp						\
 	master/http.cpp							\
+	master/http_constants.cpp					\
 	master/master.cpp						\
 	master/metrics.cpp						\
 	master/registry.hpp						\

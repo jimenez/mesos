@@ -32,12 +32,17 @@
 #include <stout/stringify.hpp>
 
 #include "master/master.hpp"
+#include "master/http_constants.hpp"
 #include "master/validation.hpp"
 
 using std::string;
 using std::vector;
 
 using google::protobuf::RepeatedPtrField;
+
+using process::http::BadRequest;
+using process::http::NotAcceptable;
+using process::http::UnsupportedMediaType;
 
 namespace mesos {
 namespace internal {
@@ -50,6 +55,40 @@ static bool invalid(char c)
 {
   return iscntrl(c) || c == '/' || c == '\\';
 }
+
+namespace http {
+
+Option<process::http::Response>  validate(
+    const process::http::Request& request)
+{
+  Option<string> accept = request.headers.get("Accept");
+  Option<string> connection = request.headers.get("Connection");
+
+  if (accept.isNone()) {
+    return BadRequest("Missing Accept header");
+  }
+  if (connection.isNone()) {
+    return BadRequest("Missing Connection header");
+  }
+  if (accept.get() != APPLICATION_JSON &&
+      accept.get() != APPLICATION_PROTOBUF) {
+    return NotAcceptable("Unsupported '" + accept.get() +
+                         "' Accept header; Expecting " +
+                         APPLICATION_PROTOBUF + " or " +
+                         APPLICATION_JSON);
+  }
+  if (connection.get() != KEEP_ALIVE) {
+    return UnsupportedMediaType("Unsupported '" + connection.get() +
+                       "' Connection header; Expecting " +
+                       KEEP_ALIVE);
+  }
+  // Not returning a response after validation so it can be
+  // determine for each call.
+  return None();
+}
+
+} // namespace http {
+
 
 namespace resource {
 
