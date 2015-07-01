@@ -774,8 +774,11 @@ Future<Response> _request(
   // Need to specify the 'Host' header.
   headers["Host"] = stringify(address);
 
-  // Tell the server to close the connection when it's done.
-  headers["Connection"] = "close";
+  if (headers["Connection"] == "") {
+    // Tell the server to close the connection when it's done.
+    // If the connection header not already specified.
+    headers["Connection"] = "close";
+  }
 
   // Overwrite Content-Type if necessary.
   if (contentType.isSome()) {
