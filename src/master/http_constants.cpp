@@ -26,7 +26,8 @@ namespace master {
 
 const std::string APPLICATION_JSON = "application/json";
 const std::string APPLICATION_PROTOBUF = "application/x-protobuf";
-const std::string KEEP_ALIVE = "keep-alive";
+const std::string CLOSE = "close";
+const std::string CONTENT_TYPE = "Content-Type";
 
 } // namespace master {
 } // namespace internal {

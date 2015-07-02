@@ -68,7 +68,7 @@ TEST_F(CallTest, CallEndpointPost)
   hashmap<string, string> headers;
   headers["Content-Type"] = "application/x-protobuf";
   headers["Accept"] = "application/x-protobuf";
-  headers["Connection"] = "keep-alive";
+  headers["Connection"] = "close";
 
   Call call;
   call.mutable_framework_info()->CopyFrom(DEFAULT_FRAMEWORK_INFO);
@@ -173,7 +173,7 @@ TEST_F(CallTest, CallEndpointWrongHeaderAccept)
   hashmap<string, string> headers;
   headers["Content-Type"] = "application/x-protobuf";
   headers["Accept"] = "foo";
-  headers["Connection"] = "keep-alive";
+  headers["Connection"] = "close";
 
   Call call;
   call.mutable_framework_info()->CopyFrom(DEFAULT_FRAMEWORK_INFO);

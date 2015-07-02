@@ -72,18 +72,17 @@ Option<process::http::Response>  validate(
   }
   if (accept.get() != APPLICATION_JSON &&
       accept.get() != APPLICATION_PROTOBUF) {
-    return NotAcceptable("Unsupported '" + accept.get() +
-                         "' Accept header; Expecting " +
-                         APPLICATION_PROTOBUF + " or " +
-                         APPLICATION_JSON);
+    return NotAcceptable("Unsupported Accept: '" + accept.get() +
+                         "'; Expecting one of (" + APPLICATION_PROTOBUF +
+                         ", " + APPLICATION_JSON + ")");
   }
-  if (connection.get() != KEEP_ALIVE) {
+  if (connection.get() != CLOSE) {
     return UnsupportedMediaType("Unsupported '" + connection.get() +
-                       "' Connection header; Expecting " +
-                       KEEP_ALIVE);
+                         "' Connection header; Expecting " + CLOSE);
+
   }
   // Not returning a response after validation so it can be
-  // determine for each call.
+  // determined for each call.
   return None();
 }
 

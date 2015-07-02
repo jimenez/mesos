@@ -23,12 +23,18 @@ namespace mesos {
 namespace internal {
 namespace master {
 
-// Supported Content-Type and Accept HTTP headers
+/**
+ * Supported Content-Tye and Accept headers
+ */
 extern const std::string APPLICATION_JSON;
 extern const std::string APPLICATION_PROTOBUF;
 
-// Supported Connection HTTP header
-extern const std::string KEEP_ALIVE;
+/**
+* Supported Connection HTTP header
+*/
+extern const std::string CLOSE;
+
+extern const std::string CONTENT_TYPE;
 
 } // namespace master {
 } // namespace internal {

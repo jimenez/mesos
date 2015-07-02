@@ -319,7 +319,7 @@ Future<Response> Master::Http::call(const Request& request) const
     return Unauthorized("Mesos master", credential.error());
   }
 
-  Option<string> contentType = request.headers.get("Content-Type");
+  Option<string> contentType = request.headers.get(CONTENT_TYPE);
 
   if (contentType.isNone()) {
     return BadRequest("Missing Content-Type header");
@@ -346,10 +346,11 @@ Future<Response> Master::Http::call(const Request& request) const
     }
     call = call_;
   } else {
-    return UnsupportedMediaType("Unsupported '" + contentType.get() +
-                       "' Content-Type; Expecting " +
-                       APPLICATION_PROTOBUF + " or " +
-                       APPLICATION_JSON);
+    return UnsupportedMediaType("Unsupported Content-Type: '" +
+                                 contentType.get() +
+                                "'; Expecting one of (" +
+                                APPLICATION_PROTOBUF + ", " +
+                                APPLICATION_JSON + ")");
   }
 
   Option<Response> response;
