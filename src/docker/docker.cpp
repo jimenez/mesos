@@ -187,18 +187,20 @@ Future<Version> Docker::_version(const string& cmd, const Subprocess& s)
 Future<Version> Docker::__version(const Future<string>& output)
 {
   vector<string> parts = strings::split(output.get(), ",");
-  if !parts.empty() {
-      vector<string> sub_parts = strings::split(parts[0], " ");
-      if !sub_parts.empty() {
-          Try<Version> version = Version::parse(sub_parts.back());
 
-          if (version.isError()) {
-            return Failure("Failed to parse docker version: " +
-                           version.error());
-          }
+  if (!parts.empty()) {
+    vector<string> subParts = strings::split(parts.front(), " ");
 
-          return version;
+    if (!subParts.empty()) {
+      Try<Version> version = Version::parse(subParts.back());
+
+      if (version.isError()) {
+        return Failure("Failed to parse docker version: " +
+                       version.error());
       }
+
+      return version;
+    }
   }
 
   return Failure("Unable to find docker version in output");
