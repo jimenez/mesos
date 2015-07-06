@@ -16,56 +16,17 @@
  * limitations under the License.
  */
 
-#ifndef __COMMON_HTTP_VALIDATION_HPP__
-#define __COMMON_HTTP_VALIDATION_HPP__
-
-#include <string>
-
 #include <mesos/mesos.hpp>
 
-#include <stout/none.hpp>
+#include <process/http.hpp>
 
-using process::http::BadRequest;
-using process::http::NotAcceptable;
-using process::http::UnsupportedMediaType;
+#include <stout/option.hpp>
 
 namespace mesos {
 namespace internal {
-namespace validation {
-namespace http {
 
 Option<process::http::Response>  validate(
-    const process::http::Request& request)
-{
-  Option<string> accept = request.headers.get("Accept");
-  Option<string> connection = request.headers.get("Connection");
+    const process::http::Request& request);
 
-  if (accept.isNone()) {
-    return BadRequest("Missing Accept header");
-  }
-  if (connection.isNone()) {
-    return BadRequest("Missing Connection header");
-  }
-  if (accept.get() != "application/json" &&
-      accept.get() != "application/x-protobuf") {
-    return NotAcceptable("Unsupported Accept: '" + accept.get() +
-                         "'; Expecting one of (application/x-protobuf" +
-                         ", application/json)");
-     }
-  if (connection.get() != "close") {
-    return UnsupportedMediaType("Unsupported '" + connection.get() +
-                                "' Connection header; Expecting close");
-
-  }
-  // Not returning a response after validation so it can be
-  // determined for each call.
-  return None();
-}
-
-
-} // namespace http {
-} // namespace validation {
 } // namespace internal {
 } // namespace mesos {
-
-#endif // __COMMON_HTTP_VALIDATION_HPP__
