@@ -262,6 +262,23 @@ bool Request::acceptsMediaType(const string& mediaType) const
     }
   }
 
+  return false;
+}
+
+
+bool Request::acceptsEncoding(const string& encoding) const
+{
+  // See RFC 2616, section 14.3 for the details.
+
+  // From RFC 2616:
+  // 1. If the content-coding is one of the content-codings listed in
+  //    the Accept-Encoding field, then it is acceptable, unless it is
+  //    accompanied by a qvalue of 0. (As defined in section 3.9, a
+  //    qvalue of 0 means "not acceptable.")
+  // 2. The special "*" symbol in an Accept-Encoding field matches any
+  //    available content-coding not explicitly listed in the header
+  //    field.
+
   // NOTE: 3 and 4 are partially ignored since we can only provide gzip.
   // 3. If multiple content-codings are acceptable, then the acceptable
   //    content-coding with the highest non-zero qvalue is preferred.
@@ -271,7 +288,29 @@ bool Request::acceptsMediaType(const string& mediaType) const
   //    not explicitly include the "identity" content-coding. If the
   //    Accept-Encoding field-value is empty, then only the "identity"
   //    encoding is acceptable.
-  return false;
+  return acceptHeader("Accept-Encoding", encoding);
+}
+
+
+bool Request::acceptsMediaType(const string& mediaType) const
+{
+  // From RFC 2616:
+  // The Accept request-header field can be used to specify certain
+  // media types which are acceptable for the response.
+  // Accept headers can be used to indicate that the request is
+  // specifically limited to a small set of desired types, as in
+  // the case of a request for an in-line image.
+  // See RFC 2616, section 14.1 for the details.
+
+  // Note: Since we want to allow the server to enforce the
+  // presence of an Accept header.
+  // We're ignoring the following:
+  // If no Accept header field is present, then it is assumed that
+  // the client accepts all media types. If an Accept header field
+  // is present, and if the server cannot send a response which is
+  // acceptable according to the combined Accept field value,
+  // then the server SHOULD send a 406 (not acceptable) response.
+  return acceptHeader("Accept", mediaType);
 }
 
 
