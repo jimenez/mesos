@@ -106,6 +106,15 @@ struct Request
   // TODO(bmahler): Consider this logic being in decoder.hpp, and having the
   // Request contain a member variable for each popular HTTP 1.0/1.1 header.
   bool acceptsEncoding(const std::string& encoding) const;
+
+  // Returns whether the MediaType is considered acceptable in the request.
+  // TODO(ijimenez): Consider changing return type of accept methods to
+  // Response.
+  bool acceptsMediaType(const std::string& mediaType) const;
+
+private:
+  bool acceptHeader(const std::string& header,
+                    const std::string& content) const;
 };
 
 

@@ -101,10 +101,10 @@ void initialize()
 }
 
 
-bool Request::acceptsEncoding(const string& encoding) const
+bool Request::acceptHeader(const std::string& header,
+                           const std::string& content) const
 {
-  // See RFC 2616, section 14.3 for the details.
-  Option<string> accepted = headers.get("Accept-Encoding");
+  Option<string> accepted = headers.get(header);
 
   if (accepted.isNone()) {
     return false;
@@ -115,27 +115,18 @@ bool Request::acceptsEncoding(const string& encoding) const
   accepted = strings::remove(accepted.get(), "\t");
   accepted = strings::remove(accepted.get(), "\n");
 
-  // From RFC 2616:
-  // 1. If the content-coding is one of the content-codings listed in
-  //    the Accept-Encoding field, then it is acceptable, unless it is
-  //    accompanied by a qvalue of 0. (As defined in section 3.9, a
-  //    qvalue of 0 means "not acceptable.")
-  // 2. The special "*" symbol in an Accept-Encoding field matches any
-  //    available content-coding not explicitly listed in the header
-  //    field.
-
-  // First we'll look for the encoding specified explicitly, then '*'.
+  // First we'll look for the content specified explicitly, then '*'.
   vector<string> candidates;
-  candidates.push_back(encoding);      // Rule 1.
-  candidates.push_back("*");           // Rule 2.
+  candidates.push_back(content);
+  candidates.push_back("*");
 
   foreach (const string& candidate, candidates) {
-    // Is the candidate one of the accepted encodings?
-    foreach (const string& _encoding, strings::tokenize(accepted.get(), ",")) {
-      if (strings::startsWith(_encoding, candidate)) {
+    // Is the candidate one of the accepted contents?
+    foreach (const string& _content, strings::tokenize(accepted.get(), ",")) {
+      if (strings::startsWith(_content, candidate)) {
         // Is there a 0 q value? Ex: 'gzip;q=0.0'.
         const map<string, vector<string>> values =
-          strings::pairs(_encoding, ";", "=");
+          strings::pairs(_content, ";", "=");
 
         // Look for { "q": ["0"] }.
         if (values.count("q") == 0 || values.find("q")->second.size() != 1) {
@@ -150,6 +141,23 @@ bool Request::acceptsEncoding(const string& encoding) const
     }
   }
 
+  return false;
+}
+
+
+bool Request::acceptsEncoding(const string& encoding) const
+{
+  // See RFC 2616, section 14.3 for the details.
+
+  // From RFC 2616:
+  // 1. If the content-coding is one of the content-codings listed in
+  //    the Accept-Encoding field, then it is acceptable, unless it is
+  //    accompanied by a qvalue of 0. (As defined in section 3.9, a
+  //    qvalue of 0 means "not acceptable.")
+  // 2. The special "*" symbol in an Accept-Encoding field matches any
+  //    available content-coding not explicitly listed in the header
+  //    field.
+
   // NOTE: 3 and 4 are partially ignored since we can only provide gzip.
   // 3. If multiple content-codings are acceptable, then the acceptable
   //    content-coding with the highest non-zero qvalue is preferred.
@@ -159,7 +167,29 @@ bool Request::acceptsEncoding(const string& encoding) const
   //    not explicitly include the "identity" content-coding. If the
   //    Accept-Encoding field-value is empty, then only the "identity"
   //    encoding is acceptable.
-  return false;
+  return acceptHeader("Accept-Encoding", encoding);
+}
+
+
+bool Request::acceptsMediaType(const string& mediaType) const
+{
+  // From RFC 2616:
+  // The Accept request-header field can be used to specify certain
+  // media types which are acceptable for the response.
+  // Accept headers can be used to indicate that the request is
+  // specifically limited to a small set of desired types, as in
+  // the case of a request for an in-line image.
+  // See RFC 2616, section 14.1 for the details.
+
+  // Note: Since we want to allow the server to enforce the
+  // presence of an Accept header.
+  // We're ignoring the following:
+  // If no Accept header field is present, then it is assumed that
+  // the client accepts all media types. If an Accept header field
+  // is present, and if the server cannot send a response which is
+  // acceptable according to the combined Accept field value,
+  // then the server SHOULD send a 406 (not acceptable) response.
+  return acceptHeader("Accept", mediaType);
 }
 
 
