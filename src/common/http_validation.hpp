@@ -24,9 +24,13 @@
 
 namespace mesos {
 namespace internal {
+namespace http {
+namespace header {
 
 Option<process::http::Response>  validate(
     const process::http::Request& request);
 
+} // namespace header {
+} // namespace http {
 } // namespace internal {
 } // namespace mesos {

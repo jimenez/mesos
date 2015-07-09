@@ -40,18 +40,17 @@ namespace header {
 Option<process::http::Response>  validate(
     const process::http::Request& request)
 {
-  Option<string> accept = request.headers.get("Accept");
   Option<string> connection = request.headers.get("Connection");
 
-  if (accept.isNone()) {
+  if (request.acceptsMediaType("").isNone()) {
     return BadRequest("Missing Accept header");
   }
   if (connection.isNone()) {
     return BadRequest("Missing Connection header");
   }
-  if (accept.get() != "application/json" &&
-      accept.get() != "application/x-protobuf") {
-    return NotAcceptable("Unsupported Accept: '" + accept.get() +
+  if (!request.acceptsMediaType("application/json").get() &&
+      !request.acceptsMediaType("application/x-protobuf").get()) {
+    return NotAcceptable("Unsupported Accept: '" + request.headers.get("Accept").get() +
                          "'; Expecting one of (application/x-protobuf" +
                          ", application/json)");
      }
