@@ -275,7 +275,7 @@ bool Request::acceptsMediaType(const string& mediaType) const
 }
 
 
-bool Request::acceptsEncoding(const string& encoding) const
+Option<bool> Request::acceptsEncoding(const string& encoding) const
 {
   // See RFC 2616, section 14.3 for the details.
 
@@ -301,7 +301,7 @@ bool Request::acceptsEncoding(const string& encoding) const
 }
 
 
-bool Request::acceptsMediaType(const string& mediaType) const
+Option<bool> Request::acceptsMediaType(const string& mediaType) const
 {
   // From RFC 2616:
   // The Accept request-header field can be used to specify certain
