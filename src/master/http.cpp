@@ -302,9 +302,32 @@ const string Master::Http::CALL_HELP = HELP(
     DESCRIPTION(
         "Returns 202 Accepted iff the request is accepted."));
 
+void Master::Http::unmarshall(const Request& request) const
+{
+  Option<scheduler::Call> call;
 
+  if (contentType.get() == APPLICATION_JSON) {
+    Try<JSON::Object> json = JSON::parse<JSON::Object>(request.body);
+    if (json.isError()) {
+      return BadRequest(json.error());
+    }
+
+    Try<scheduler::Call> call_ = ::protobuf::parse<scheduler::Call>(json.get());
+    if (call_.isError()) {
+      return BadRequest(call_.error());
+    }
+    call = call_.get();
+  } else if (contentType.get() == APPLICATION_PROTOBUF) {
+    scheduler::Call call_;
+    if (!call_.ParseFromString(request.body)) {
+      return BadRequest("Failed to parse body into Call");
+    }
+  }
+}
+  
 Future<Response> Master::Http::call(const Request& request) const
 {
+  
   return Accepted();
 }
 
