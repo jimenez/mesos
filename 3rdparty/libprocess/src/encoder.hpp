@@ -200,11 +200,12 @@ public:
 
     // Should we compress this response?
     std::string body = response.body;
+    Result<bool> encoding = request.acceptsEncoding("gzip");
 
     if (response.type == http::Response::BODY &&
         response.body.length() >= GZIP_MINIMUM_BODY_LENGTH &&
         !headers.contains("Content-Encoding") &&
-        request.acceptsEncoding("gzip")) {
+        (encoding.isSome() && encoding.get())) {
       Try<std::string> compressed = gzip::compress(body);
       if (compressed.isError()) {
         LOG(WARNING) << "Failed to gzip response body: " << compressed.error();

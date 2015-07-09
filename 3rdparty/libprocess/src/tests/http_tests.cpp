@@ -793,7 +793,7 @@ TEST(HTTPTest, AcceptMediaTypeHeader)
   requests[6].headers["Accept"] = "foo,\ttest;q=0.0";
 
   foreach (const http::Request& request, requests) {
-    EXPECT_FALSE(request.acceptsMediaType("test"))
+    EXPECT_FALSE(request.acceptsMediaType("test").get())
       << "Test media type is unacceptable for 'Accept: "
       << request.headers.get("Accept").get() << "'";
   }
@@ -818,7 +818,7 @@ TEST(HTTPTest, AcceptMediaTypeHeader)
   testMediaTypeRequests[11].headers["Accept"] = "test";
 
   foreach (const http::Request& testRequest, testMediaTypeRequests) {
-    EXPECT_TRUE(testRequest.acceptsMediaType("test"))
+    EXPECT_TRUE(testRequest.acceptsMediaType("test").get())
       << "Test media type is acceptable for 'Accept: "
       << testRequest.headers.get("Accept").get() << "'";
   }
@@ -827,5 +827,5 @@ TEST(HTTPTest, AcceptMediaTypeHeader)
   // Create request without Accept header
   http::Request requestNoAccept;
 
-  EXPECT_FALSE(requestNoAccept.acceptsMediaType("test"));
+  EXPECT_NONE(requestNoAccept.acceptsMediaType("test"));
 }
