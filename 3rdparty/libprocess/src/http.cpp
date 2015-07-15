@@ -266,19 +266,57 @@ bool Request::acceptsMediaType(const string& mediaType) const
 }
 
 
-Option<bool> Request::acceptsEncoding(const string& encoding) const
-{
-  return accepts("Accept-Encoding", encoding);
-}
-
-
 Option<bool> Request::acceptsMediaType(const string& mediaType) const
 {
-  // TODO(ijimenez): The accepts method only verifies that mediaType
-  // is acceptable and well formatted, by also verifying that qvalue
-  // for mediaType in the header > 0.
+  // TODO(ijimenez): This only verifies that mediaType is acceptable
+  // and well formatted, by also verifying that qvalue > 0.
   // We should fully suport 'accept-params' in the future.
-  return accepts("Accept", mediaType);
+
+  Option<string> accepted = headers.get("Accept");
+
+  // If no Accept header field is present, then it is assumed
+  // that the client accepts all media types.
+  if (accepted.isNone()) {
+    return true;
+  }
+
+  // Remove spaces and tabs for easier parsing.
+  accepted = strings::remove(accepted.get(), " ");
+  accepted = strings::remove(accepted.get(), "\t");
+  accepted = strings::remove(accepted.get(), "\n");
+
+  foreach (const string& content, strings::tokenize(accepted.get(), ",")) {
+    vector<string> contentTokens = strings::tokenize(content, "/");
+    if (contentTokens.size() != 2) {
+      return false;
+    }
+
+    // First we'll look for the content specified explicitly, then '*'.
+    vector<string> candidateTokens = strings::tokenize(mediaType, "/");
+    // Is the candidate one of the accepted type?
+    if (strings::startsWith(contentTokens[0], candidateTokens[0]) ||
+        strings::startsWith(contentTokens[0], "*")) {
+      // Is the candidate one of the accepted subtype?
+      if (strings::startsWith(contentTokens[1], candidateTokens[1]) ||
+          strings::startsWith(contentTokens[1], "*")) {
+        // Is there a 0 q value? Ex: 'gzip;q=0.0'.
+        const map<string, vector<string>> values =
+          strings::pairs(contentTokens[1], ";", "=");
+
+        // Look for { "q": ["0"] }.
+        if (values.count("q") == 0 || values.find("q")->second.size() != 1) {
+          // No q value, or malformed q value.
+          return true;
+        }
+
+        // Is the q value > 0?
+        Try<double> value = numify<double>(values.find("q")->second[0]);
+        return value.isSome() && value.get() > 0;
+      }
+    }
+  }
+
+  return false;
 }
 
 
