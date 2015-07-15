@@ -783,49 +783,45 @@ TEST(URLTest, Stringification)
 TEST(HTTPTest, AcceptMediaTypeHeader)
 {
   // Create requests that do not accept the test media type.
-  vector<http::Request> requests(7);
-  requests[0].headers["Accept"] = "test;q=0.0";
-  requests[1].headers["Accept"] = "foo";
-  requests[2].headers["Accept"] = "foo, test;q=0.0";
-  requests[3].headers["Accept"] = "*, test;q=0.0";
-  requests[4].headers["Accept"] = "*;q=0.0, foo";
-  requests[5].headers["Accept"] = "\n foo";
-  requests[6].headers["Accept"] = "foo,\ttest;q=0.0";
+  vector<string> wrongHeaders = { "test,q=0.0",
+                                  "foo",
+                                  "test/",
+                                  "foo, test,q=0.0",
+                                  "*, test,q=0.0",
+                                  "*,q=0.0, foo",
+                                  "\n foo",
+                                  "foo,\ttest,q=0.0"};
 
-  foreach (const http::Request& request, requests) {
-    EXPECT_FALSE(request.acceptsMediaType("test").get())
+  http::Request request;
+  for (auto accept : wrongHeaders) {
+    request.headers["Accept"] = accept;
+    EXPECT_FALSE(request.acceptsMediaType("test/*").get())
       << "Test media type is unacceptable for 'Accept: "
       << request.headers.get("Accept").get() << "'";
   }
 
   // Create requests that accept test media type.
-  vector<http::Request> testMediaTypeRequests(12);
+  vector<string> headers = { "test/*,q=0.1",
+                             "test/bar, test/foo,q=0.1",
+                             "*/*, test/bar,q=0.5",
+                             "*/*,q=0.9, test/foo",
+                             "test/foo,\ttest/*,q=0.1",
+                             "test/*",
+                             "*/*, test/bar",
+                             "*/*",
+                             "*/*, foo/*",
+                             "\n test/*",
+                             "foo/*,\ttest/*",
+                             "test/bar"};
 
-  // Using q values.
-  testMediaTypeRequests[0].headers["Accept"] = "test/foo;q=0.1,*";
-  testMediaTypeRequests[1].headers["Accept"] = "foo/bar, test/foo;q=0.1";
-  testMediaTypeRequests[2].headers["Accept"] = "*/*, test;q=0.5";
-  testMediaTypeRequests[3].headers["Accept"] = "*/*;q=0.9, foo/bar";
-  testMediaTypeRequests[4].headers["Accept"] = "foo/bar,\ttest/foo;q=0.1";
-
-  // No q values.
-  testMediaTypeRequests[5].headers["Accept"] = "test/*";
-  testMediaTypeRequests[6].headers["Accept"] = "foo/bar, test/foo";
-  testMediaTypeRequests[7].headers["Accept"] = "*/*";
-  testMediaTypeRequests[8].headers["Accept"] = "*/*, foo/*";
-  testMediaTypeRequests[9].headers["Accept"] = "\n test/*";
-  testMediaTypeRequests[10].headers["Accept"] = "foo/*,\ttest/*";
-  testMediaTypeRequests[11].headers["Accept"] = "test/bar";
-
-  foreach (const http::Request& testRequest, testMediaTypeRequests) {
-    EXPECT_TRUE(testRequest.acceptsMediaType("test").get())
+  for (auto accept : headers) {
+    request.headers["Accept"] = accept;
+    EXPECT_TRUE(request.acceptsMediaType("test/bar").get())
       << "Test media type is acceptable for 'Accept: "
-      << testRequest.headers.get("Accept").get() << "'";
+      << request.headers.get("Accept").get() << "'";
   }
-
 
   // Create request without Accept header
   http::Request requestNoAccept;
-
-  EXPECT_NONE(requestNoAccept.acceptsMediaType("test"));
+  EXPECT_TRUE(requestNoAccept.acceptsMediaType("test/bar").get());
 }
