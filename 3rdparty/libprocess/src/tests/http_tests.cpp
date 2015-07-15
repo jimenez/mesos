@@ -802,20 +802,20 @@ TEST(HTTPTest, AcceptMediaTypeHeader)
   vector<http::Request> testMediaTypeRequests(12);
 
   // Using q values.
-  testMediaTypeRequests[0].headers["Accept"] = "test;q=0.1,*";
-  testMediaTypeRequests[1].headers["Accept"] = "foo, test;q=0.1";
-  testMediaTypeRequests[2].headers["Accept"] = "*, test;q=0.5";
-  testMediaTypeRequests[3].headers["Accept"] = "*;q=0.9, foo";
-  testMediaTypeRequests[4].headers["Accept"] = "foo,\ttest;q=0.1";
+  testMediaTypeRequests[0].headers["Accept"] = "test/foo;q=0.1,*";
+  testMediaTypeRequests[1].headers["Accept"] = "foo/bar, test/foo;q=0.1";
+  testMediaTypeRequests[2].headers["Accept"] = "*/*, test;q=0.5";
+  testMediaTypeRequests[3].headers["Accept"] = "*/*;q=0.9, foo/bar";
+  testMediaTypeRequests[4].headers["Accept"] = "foo/bar,\ttest/foo;q=0.1";
 
   // No q values.
-  testMediaTypeRequests[5].headers["Accept"] = "test";
-  testMediaTypeRequests[6].headers["Accept"] = "foo, test";
-  testMediaTypeRequests[7].headers["Accept"] = "*";
-  testMediaTypeRequests[8].headers["Accept"] = "*, foo";
-  testMediaTypeRequests[9].headers["Accept"] = "\n test";
-  testMediaTypeRequests[10].headers["Accept"] = "foo,\ttest";
-  testMediaTypeRequests[11].headers["Accept"] = "test";
+  testMediaTypeRequests[5].headers["Accept"] = "test/*";
+  testMediaTypeRequests[6].headers["Accept"] = "foo/bar, test/foo";
+  testMediaTypeRequests[7].headers["Accept"] = "*/*";
+  testMediaTypeRequests[8].headers["Accept"] = "*/*, foo/*";
+  testMediaTypeRequests[9].headers["Accept"] = "\n test/*";
+  testMediaTypeRequests[10].headers["Accept"] = "foo/*,\ttest/*";
+  testMediaTypeRequests[11].headers["Accept"] = "test/bar";
 
   foreach (const http::Request& testRequest, testMediaTypeRequests) {
     EXPECT_TRUE(testRequest.acceptsMediaType("test").get())
