@@ -266,7 +266,7 @@ bool Request::acceptsMediaType(const string& mediaType) const
 }
 
 
-Option<bool> Request::acceptsMediaType(const string& mediaType) const
+bool Request::acceptsMediaType(const string& mediaType) const
 {
   // TODO(ijimenez): This only verifies that mediaType is acceptable
   // and well formatted, by also verifying that qvalue > 0.

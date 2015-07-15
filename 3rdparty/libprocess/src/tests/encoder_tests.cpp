@@ -77,7 +77,7 @@ TEST(EncoderTest, AcceptableEncodings)
   requests[9].headers["Accept-Encoding"] = ",";
 
   foreach (const Request& request, requests) {
-    EXPECT_FALSE(request.acceptsEncoding("gzip").get())
+    EXPECT_FALSE(request.acceptsEncoding("gzip"))
       << "Gzip encoding is unacceptable for 'Accept-Encoding: "
       << request.headers.get("Accept-Encoding").get() << "'";
   }
@@ -102,7 +102,7 @@ TEST(EncoderTest, AcceptableEncodings)
   gzipRequests[11].headers["Accept-Encoding"] = "gzip";
 
   foreach (const Request& gzipRequest, gzipRequests) {
-    EXPECT_TRUE(gzipRequest.acceptsEncoding("gzip").get())
+    EXPECT_TRUE(gzipRequest.acceptsEncoding("gzip"))
       << "Gzip encoding is acceptable for 'Accept-Encoding: "
       << gzipRequest.headers.get("Accept-Encoding").get() << "'";
   }
