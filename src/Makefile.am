@@ -395,7 +395,6 @@ libmesos_no_3rdparty_la_SOURCES =					\
 	common/attributes.cpp						\
 	common/date_utils.cpp						\
 	common/http.cpp							\
-	common/http_validation.cpp					\
 	common/protobuf_utils.cpp					\
 	common/resources.cpp						\
 	common/resources_utils.cpp					\
@@ -653,7 +652,6 @@ libmesos_no_3rdparty_la_SOURCES +=					\
 	common/build.hpp						\
 	common/date_utils.hpp						\
 	common/http.hpp							\
-	common/http_validation.hpp					\
 	common/parse.hpp						\
 	common/protobuf_utils.hpp					\
 	common/recordio.hpp						\

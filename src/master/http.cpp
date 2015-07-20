@@ -47,7 +47,6 @@
 #include "common/attributes.hpp"
 #include "common/build.hpp"
 #include "common/http.hpp"
-#include "common/protobuf_utils.hpp"
 
 #include "internal/devolve.hpp"
 
@@ -69,6 +68,8 @@ using process::USAGE;
 using process::http::Accepted;
 using process::http::BadRequest;
 using process::http::InternalServerError;
+using process::http::MethodNotAllowed;
+using process::http::NotAcceptable;
 using process::http::NotFound;
 using process::http::NotImplemented;
 using process::http::OK;
@@ -313,6 +314,35 @@ void Master::Http::log(const Request& request)
 }
 
 
+Try<scheduler::Call> unmarshall(const string& contentType,
+                                const string& body)
+{
+  v1::scheduler::Call v1Call;
+
+  if (contentType == mesos::internal::APPLICATION_JSON) {
+    Try<JSON::Object> json = JSON::parse<JSON::Object>(body);
+    if (json.isError()) {
+      return Error(json.error());
+    }
+
+    Try<v1::scheduler::Call> call_ = 
+      ::protobuf::parse<v1::scheduler::Call>(json.get());
+    if (call_.isError()) {
+      return Error(call_.error());
+    }
+    call = call_.get();
+  } else if (contentType == mesos::internal::APPLICATION_PROTOBUF) {
+    if (!call.ParseFromString(body)) {
+      return Error("Failed to parse body into Call");
+    }
+  } else {
+    return Error("Unsupported");
+  }
+
+  return call;
+}
+
+
 // TODO(ijimenez): Add some information or pointers to help
 // users understand the HTTP Event/Call API.
 const string Master::Http::SCHEDULER_HELP = HELP(
@@ -332,7 +362,24 @@ Future<Response> Master::Http::scheduler(const Request& request) const
         "HTTP schedulers are not supported when authentication is required");
   }
 
-  v1::scheduler::Call v1Call;
+  if (request.method != "POST") {
+    return MethodNotAllowed("Expecting POST. Received " +
+                            request.method + " instead");
+  }
+
+
+  if (!request.acceptsMediaType(mesos::internal::APPLICATION_PROTOBUF) &&
+      !request.acceptsMediaType(mesos::internal::APPLICATION_JSON)) {
+    return NotAcceptable("Unsupported Accept: '" + request.headers.get("Accept").get() +
+                         "'; Expecting one of (" +
+                         mesos::internal::APPLICATION_PROTOBUF + ", " +
+                         mesos::internal::APPLICATION_JSON + ")");
+  }
+
+  Result<Credential> credential = authenticate(request);
+  if (credential.isError()) {
+    return Unauthorized("Mesos master", credential.error());
+  }
 
   // TODO(anand): Content type values are case-insensitive.
   Option<string> contentType = request.headers.get("Content-Type");
@@ -341,33 +388,16 @@ Future<Response> Master::Http::scheduler(const Request& request) const
     return BadRequest("Expecting 'Content-Type' to be present");
   }
 
-  if (contentType.get() == APPLICATION_PROTOBUF) {
-    if (!v1Call.ParseFromString(request.body)) {
-      return BadRequest("Failed to parse body into Call protobuf");
-    }
-  } else if (contentType.get() == APPLICATION_JSON) {
-    Try<JSON::Value> value = JSON::parse(request.body);
-
-    if (value.isError()) {
-      return BadRequest("Failed to parse body into JSON: " + value.error());
-    }
-
-    Try<v1::scheduler::Call> parse =
-      ::protobuf::parse<v1::scheduler::Call>(value.get());
-
-    if (parse.isError()) {
-      return BadRequest("Failed to convert JSON into Call protobuf: " +
-                        parse.error());
-    }
-
-    v1Call = parse.get();
-  } else {
-    return UnsupportedMediaType(
-        string("Expecting 'Content-Type' of ") +
-        APPLICATION_JSON + " or " + APPLICATION_PROTOBUF);
+  Result<v1::scheduler::Call> v1call = unmarshall(contentType.get(), request.body);
+  if (call.isError()) {
+    return UnsupportedMediaType("Unsupported Content-Type: '" +
+                                contentType.get() +
+                                "'; Expecting one of (" +
+                                mesos::internal::APPLICATION_PROTOBUF + ", " +
+                                mesos::internal::APPLICATION_JSON + ")");
   }
 
-  scheduler::Call call = devolve(v1Call);
+  scheduler::Call call = devolve(v1Call.get());
 
   Option<Error> error = validation::scheduler::call::validate(call);
 
