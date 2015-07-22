@@ -275,39 +275,48 @@ bool Request::acceptsMediaType(const string& mediaType) const
 }
 
 
-bool Request::acceptsMediaType(const string& mediaType) const
+bool Request::acceptsMediaType(const string& mediaType_) const
 {
-  Option<string> accepted = headers.get("Accept");
+  // From RFC 2616:
+  // The Accept request-header field can be used to specify certain
+  // media types which are acceptable for the response.
+  // Accept headers can be used to indicate that the request is
+  // specifically limited to a small set of desired types, as in
+  // the case of a request for an in-line image.
+  vector<string> mediaType = strings::tokenize(mediaType_, "/");
+
+  if (mediaType.size() != 2) {
+    return false;
+  }
+
+  Option<string> accept = headers.get("Accept");
 
   // If no Accept header field is present, then it is assumed
   // that the client accepts all media types.
-  if (accepted.isNone()) {
+  if (accept.isNone()) {
     return true;
   }
 
   // Remove spaces and tabs for easier parsing.
-  accepted = strings::remove(accepted.get(), " ");
-  accepted = strings::remove(accepted.get(), "\t");
-  accepted = strings::remove(accepted.get(), "\n");
+  accept = strings::remove(accept.get(), " ");
+  accept = strings::remove(accept.get(), "\t");
+  accept = strings::remove(accept.get(), "\n");
 
-  foreach (const string& content, strings::tokenize(accepted.get(), ",")) {
-    vector<string> contentTokens = strings::tokenize(content, "/");
-    if (contentTokens.size() != 2) {
-      return false;
-    }
+  vector<string> candidates;
+  candidates.push_back(mediaType_);
+  candidates.push_back(mediaType[0] + "/*");
+  candidates.push_back("*/*");
 
-    // First we'll look for the content specified explicitly, then '*'.
-    vector<string> candidateTokens = strings::tokenize(mediaType, "/");
-    // Is the candidate one of the accepted type?
-    if (strings::startsWith(contentTokens[0], candidateTokens[0]) ||
-        strings::startsWith(contentTokens[0], "*")) {
+  foreach (const string& candidate, candidates) {
+    // First we'll look for the content specified explicitly, then '*/*'.
+    foreach (const string& content, strings::tokenize(accept.get(), ",")) {
+      vector<string> tokens = strings::tokenize(content, ";");
 
-      // Is the candidate one of the accepted subtype?
-      if (strings::startsWith(contentTokens[1], candidateTokens[1]) ||
-          strings::startsWith(contentTokens[1], "*")) {
+      // Is the candidate one of the accepted type?
+      if (strings::lower(tokens[0]) == strings::lower(candidate)) {
         // Is there a 0 q value? Ex: 'gzip;q=0.0'.
         const map<string, vector<string>> values =
-          strings::pairs(contentTokens[1], ";", "=");
+          strings::pairs(content, ";", "=");
 
         // Look for { "q": ["0"] }.
         if (values.count("q") == 0 || values.find("q")->second.size() != 1) {
