@@ -301,6 +301,7 @@ bool Request::acceptsMediaType(const string& mediaType) const
     // Is the candidate one of the accepted type?
     if (strings::startsWith(contentTokens[0], candidateTokens[0]) ||
         strings::startsWith(contentTokens[0], "*")) {
+
       // Is the candidate one of the accepted subtype?
       if (strings::startsWith(contentTokens[1], candidateTokens[1]) ||
           strings::startsWith(contentTokens[1], "*")) {
