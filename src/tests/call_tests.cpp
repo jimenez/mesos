@@ -71,7 +71,8 @@ TEST_F(CallTest, CallEndpointPost)
 
   Call call;
   call.set_type(Call::SUBSCRIBE);
-  call.mutable_subscribe()->mutable_framework_info()->CopyFrom(DEFAULT_FRAMEWORK_INFO);
+  call.mutable_subscribe()->
+    mutable_framework_info()->CopyFrom(DEFAULT_FRAMEWORK_INFO);
 
   string body;
   call.SerializeToString(&body);

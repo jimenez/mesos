@@ -370,7 +370,8 @@ Future<Response> Master::Http::scheduler(const Request& request) const
 
   if (!request.acceptsMediaType(mesos::internal::APPLICATION_PROTOBUF) &&
       !request.acceptsMediaType(mesos::internal::APPLICATION_JSON)) {
-    return NotAcceptable("Unsupported Accept: '" + request.headers.get("Accept").get() +
+    return NotAcceptable("Unsupported Accept: '" +
+                         request.headers.get("Accept").get() +
                          "'; Expecting one of (" +
                          mesos::internal::APPLICATION_PROTOBUF + ", " +
                          mesos::internal::APPLICATION_JSON + ")");

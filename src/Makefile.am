@@ -1551,7 +1551,6 @@ libtestqos_controller_la_SOURCES =		\
 libtestqos_controller_la_CPPFLAGS = $(MESOS_CPPFLAGS)
 libtestqos_controller_la_LDFLAGS = $(MESOS_TEST_MODULE_LDFLAGS)
 
-<<<<<<< HEAD
 mesos_tests_SOURCES =						\
   tests/anonymous_tests.cpp					\
   tests/attributes_tests.cpp					\
