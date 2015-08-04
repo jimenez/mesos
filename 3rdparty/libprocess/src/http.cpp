@@ -115,7 +115,7 @@ void initialize()
 }
 
 
-bool Request::acceptsEncoding(const string& encoding) const
+bool Request::acceptsEncoding(const string& encoding_) const
 {
   // From RFC 2616:
   //
@@ -155,8 +155,8 @@ bool Request::acceptsEncoding(const string& encoding) const
 
   // First we'll look for the encoding specified explicitly, then '*'.
   vector<string> candidates;
-  candidates.push_back(encoding);      // Rule 1.
-  candidates.push_back("*");           // Rule 2.
+  candidates.push_back(encoding_);      // Rule 1.
+  candidates.push_back("*");            // Rule 2.
 
   foreach (const string& candidate, candidates) {
     // Is the candidate one of the accepted encodings?
@@ -229,6 +229,9 @@ bool Request::acceptsMediaType(const string& mediaType) const
         // Is there a 0 q value? Ex: 'gzip;q=0.0'.
         const map<string, vector<string>> values =
           strings::pairs(type, ";", "=");
+=======
+          strings::pairs(encoding, ";", "=");
+>>>>>>> accept-encoding fixes
 
         // Look for { "q": ["0"] }.
         if (values.count("q") == 0 || values.find("q")->second.size() != 1) {
