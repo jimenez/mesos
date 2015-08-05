@@ -153,6 +153,21 @@ bool Request::acceptsEncoding(const string& encoding_) const
   accept = strings::remove(accept.get(), "\t");
   accept = strings::remove(accept.get(), "\n");
 
+  // From RFC:
+  // If no Accept-Encoding header field is present, then it
+  // MAY assume that the client accepts any content encoding.
+  // NOTE: We return false here so users making requests with
+  // curl don't get accepted, as curl does not set the header by
+  // default nor does he decompress by default.
+  //
+  // 1. If the content-coding is one of the content-codings listed in
+  //    the Accept-Encoding field, then it is acceptable, unless it is
+  //    accompanied by a qvalue of 0. (As defined in section 3.9, a
+  //    qvalue of 0 means "not acceptable.")
+  // 2. The special "*" symbol in an Accept-Encoding field matches any
+  //    available content-coding not explicitly listed in the header
+  //    field.
+
   // First we'll look for the encoding specified explicitly, then '*'.
   vector<string> candidates;
   candidates.push_back(encoding_);      // Rule 1.
@@ -226,6 +241,7 @@ bool Request::acceptsMediaType(const string& mediaType) const
 
       // Is the candidate one of the accepted type?
       if (strings::lower(tokens[0]) == strings::lower(candidate)) {
+        std::cout << tokens[0] << " == " << candidate << std::endl;
         // Is there a 0 q value? Ex: 'gzip;q=0.0'.
         const map<string, vector<string>> values =
           strings::pairs(type, ";", "=");
@@ -246,6 +262,15 @@ bool Request::acceptsMediaType(const string& mediaType) const
     }
   }
 
+  // NOTE: 3 and 4 are partially ignored since we can only provide gzip.
+  // 3. If multiple content-codings are acceptable, then the acceptable
+  //    content-coding with the highest non-zero qvalue is preferred.
+  // 4. The "identity" content-coding is always acceptable, unless
+  //    specifically refused because the Accept-Encoding field includes
+  //    "identity;q=0", or because the field includes "*;q=0" and does
+  //    not explicitly include the "identity" content-coding. If the
+  //    Accept-Encoding field-value is empty, then only the "identity"
+  //    encoding is acceptable.
   return false;
 }
 
