@@ -382,7 +382,6 @@ Future<Response> Master::Http::scheduler(const Request& request) const
     return Unauthorized("Mesos master", credential.error());
   }
 
-  // TODO(anand): Content type values are case-insensitive.
   Option<string> contentType = request.headers.get("Content-Type");
 
   if (contentType.isNone()) {
@@ -401,7 +400,6 @@ Future<Response> Master::Http::scheduler(const Request& request) const
   scheduler::Call call = devolve(v1Call.get());
 
   Option<Error> error = validation::scheduler::call::validate(call);
-
   if (error.isSome()) {
     return BadRequest("Failed to validate Scheduler::Call: " +
                       error.get().message);
