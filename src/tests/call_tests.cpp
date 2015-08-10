@@ -44,6 +44,7 @@ using process::http::Accepted;
 using process::http::BadRequest;
 using process::http::MethodNotAllowed;
 using process::http::NotAcceptable;
+using process::http::NotImplemented;
 using process::http::Response;
 using process::http::UnsupportedMediaType;
 
@@ -86,7 +87,7 @@ TEST_F(CallTest, CallEndpointPost)
   AWAIT_READY(response);
   // TODO(ijimenez): Once the stream for subscribe is implemented
   // change this test to reflect new behaviour.
-  AWAIT_EXPECT_RESPONSE_STATUS_EQ(Accepted().status, response);
+  AWAIT_EXPECT_RESPONSE_STATUS_EQ(NotImplemented().status, response);
 }
 
 
