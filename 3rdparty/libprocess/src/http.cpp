@@ -115,7 +115,7 @@ void initialize()
 }
 
 
-bool Request::acceptsEncoding(const string& encoding_) const
+bool Request::acceptsEncoding(const string& encoding) const
 {
   // From RFC 2616:
   //
@@ -153,25 +153,10 @@ bool Request::acceptsEncoding(const string& encoding_) const
   accept = strings::remove(accept.get(), "\t");
   accept = strings::remove(accept.get(), "\n");
 
-  // From RFC:
-  // If no Accept-Encoding header field is present, then it
-  // MAY assume that the client accepts any content encoding.
-  // NOTE: We return false here so users making requests with
-  // curl don't get accepted, as curl does not set the header by
-  // default nor does he decompress by default.
-  //
-  // 1. If the content-coding is one of the content-codings listed in
-  //    the Accept-Encoding field, then it is acceptable, unless it is
-  //    accompanied by a qvalue of 0. (As defined in section 3.9, a
-  //    qvalue of 0 means "not acceptable.")
-  // 2. The special "*" symbol in an Accept-Encoding field matches any
-  //    available content-coding not explicitly listed in the header
-  //    field.
-
   // First we'll look for the encoding specified explicitly, then '*'.
   vector<string> candidates;
-  candidates.push_back(encoding_);      // Rule 1.
-  candidates.push_back("*");            // Rule 2.
+  candidates.push_back(encoding);      // Rule 1.
+  candidates.push_back("*");           // Rule 2.
 
   foreach (const string& candidate, candidates) {
     // Is the candidate one of the accepted encodings?
@@ -241,73 +226,9 @@ bool Request::acceptsMediaType(const string& mediaType) const
 
       // Is the candidate one of the accepted type?
       if (strings::lower(tokens[0]) == strings::lower(candidate)) {
-        std::cout << tokens[0] << " == " << candidate << std::endl;
         // Is there a 0 q value? Ex: 'gzip;q=0.0'.
         const map<string, vector<string>> values =
           strings::pairs(type, ";", "=");
-=======
-          strings::pairs(encoding, ";", "=");
->>>>>>> accept-encoding fixes
-
-        // Look for { "q": ["0"] }.
-        if (values.count("q") == 0 || values.find("q")->second.size() != 1) {
-          // No q value, or malformed q value.
-          return true;
-        }
-
-        // Is the q value > 0?
-        Try<double> value = numify<double>(values.find("q")->second[0]);
-        return value.isSome() && value.get() > 0;
-      }
-    }
-  }
-
-  return false;
-}
-
-
-bool Request::acceptsMediaType(const string& mediaType_) const
-{
-  // From RFC 2616:
-  // The Accept request-header field can be used to specify certain
-  // media types which are acceptable for the response.
-  // Accept headers can be used to indicate that the request is
-  // specifically limited to a small set of desired types, as in
-  // the case of a request for an in-line image.
-  vector<string> mediaType = strings::tokenize(mediaType_, "/");
-
-  if (mediaType.size() != 2) {
-    return false;
-  }
-
-  Option<string> accept = headers.get("Accept");
-
-  // If no Accept header field is present, then it is assumed
-  // that the client accepts all media types.
-  if (accept.isNone()) {
-    return true;
-  }
-
-  // Remove spaces and tabs for easier parsing.
-  accept = strings::remove(accept.get(), " ");
-  accept = strings::remove(accept.get(), "\t");
-  accept = strings::remove(accept.get(), "\n");
-
-  vector<string> candidates;
-  candidates.push_back(mediaType_);
-  candidates.push_back(mediaType[0] + "/*");
-  candidates.push_back("*/*");
-
-  foreach (const string& candidate, candidates) {
-    // First we'll look for the content specified explicitly, then '*/*'.
-    foreach (const string& content, strings::tokenize(accept.get(), ",")) {
-      vector<string> tokens = strings::tokenize(content, ";");
-
-      // Is the candidate one of the accepted type?
-      if (strings::lower(tokens[0]) == strings::lower(candidate)) {
-        // Is there a 0 q value? Ex: 'gzip;q=0.0'.
-        const map<string, vector<string>> values =
-          strings::pairs(content, ";", "=");
 
         // Look for { "q": ["0"] }.
         if (values.count("q") == 0 || values.find("q")->second.size() != 1) {
