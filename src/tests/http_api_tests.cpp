@@ -51,10 +51,11 @@ using process::Future;
 using process::PID;
 
 using process::http::BadRequest;
+using process::http::MethodNotAllowed;
+using process::http::NotAcceptable;
 using process::http::OK;
 using process::http::Pipe;
 using process::http::Response;
-using process::http::NotAcceptable;
 using process::http::Unauthorized;
 using process::http::UnsupportedMediaType;
 
@@ -592,6 +593,21 @@ TEST_F(HttpApiTest, WrongHeaderAccept)
   AWAIT_EXPECT_RESPONSE_STATUS_EQ(NotAcceptable().status, response);
 }
 
+
+TEST_F(HttpApiTest, MethodGet)
+{
+  master::Flags flags = CreateMasterFlags();
+  flags.authenticate_frameworks = false;
+  Try<PID<Master> > master = StartMaster(flags);
+  ASSERT_SOME(master);
+
+  Future<Response> response = process::http::get(
+      master.get(),
+      "api/v1/scheduler");
+
+  AWAIT_READY(response);
+  AWAIT_EXPECT_RESPONSE_STATUS_EQ(MethodNotAllowed().status, response);
+}
 
 } // namespace tests {
 } // namespace internal {
