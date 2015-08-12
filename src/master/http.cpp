@@ -71,6 +71,7 @@ using process::http::BadRequest;
 using process::http::InternalServerError;
 using process::http::NotFound;
 using process::http::NotImplemented;
+using process::http::NotAcceptable;
 using process::http::OK;
 using process::http::Pipe;
 using process::http::TemporaryRedirect;
@@ -387,6 +388,16 @@ Future<Response> Master::Http::scheduler(const Request& request) const
   }
 
   if (call.type() == scheduler::Call::SUBSCRIBE) {
+    if (!request.acceptsMediaType(mesos::internal::APPLICATION_PROTOBUF) ||
+        !request.acceptsMediaType(mesos::internal::APPLICATION_JSON)) {
+      return NotAcceptable(
+          "Unsupported Accept: '" +
+          request.headers.get("Accept").get() +
+          "'; Expecting one of (" +
+          mesos::internal::APPLICATION_PROTOBUF + ", " +
+          mesos::internal::APPLICATION_JSON + ")");
+    }
+
     Pipe pipe;
     OK ok;
 

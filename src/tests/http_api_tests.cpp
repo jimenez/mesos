@@ -38,6 +38,7 @@
 #include "tests/mesos.hpp"
 #include "tests/utils.hpp"
 
+using std::string;
 
 using mesos::internal::master::Master;
 
@@ -53,12 +54,11 @@ using process::http::BadRequest;
 using process::http::OK;
 using process::http::Pipe;
 using process::http::Response;
+using process::http::NotAcceptable;
 using process::http::Unauthorized;
 using process::http::UnsupportedMediaType;
 
 using recordio::Decoder;
-
-using std::string;
 
 using testing::WithParamInterface;
 
@@ -558,6 +558,40 @@ TEST_P(HttpApiTest, UpdatePidToHttpSchedulerWithoutForce)
 
   Shutdown();
 }
+
+
+TEST_F(HttpApiTest, WrongHeaderAccept)
+{
+  master::Flags flags = CreateMasterFlags();
+  flags.authenticate_frameworks = false;
+  Try<PID<Master> > master = StartMaster(flags);
+  ASSERT_SOME(master);
+
+  hashmap<string, string> headers;
+  headers["Content-Type"] = APPLICATION_PROTOBUF;
+  headers["Accept"] = "foo";
+
+  Call call;
+  // Setting SUBSCRIBE type since it's the only Call that needs
+  // Accept HTTP header validation.
+  call.set_type(Call::SUBSCRIBE);
+
+  Call::Subscribe* subscribe = call.mutable_subscribe();
+
+  subscribe->mutable_framework_info()->CopyFrom(DEFAULT_V1_FRAMEWORK_INFO);
+  string body;
+  call.SerializeToString(&body);
+
+  Future<Response> response = process::http::post(
+      master.get(),
+      "api/v1/scheduler",
+      headers,
+      body);
+
+  AWAIT_READY(response);
+  AWAIT_EXPECT_RESPONSE_STATUS_EQ(NotAcceptable().status, response);
+}
+
 
 } // namespace tests {
 } // namespace internal {
