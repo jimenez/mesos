@@ -38,6 +38,7 @@
 #include "tests/mesos.hpp"
 #include "tests/utils.hpp"
 
+using std::string;
 
 using mesos::internal::master::Master;
 
@@ -49,10 +50,14 @@ using mesos::v1::scheduler::Event;
 using process::Future;
 using process::PID;
 
+using process::http::Accepted;
 using process::http::BadRequest;
 using process::http::OK;
 using process::http::Pipe;
 using process::http::Response;
+using process::http::MethodNotAllowed;
+using process::http::NotAcceptable;
+using process::http::NotImplemented;
 using process::http::Unauthorized;
 using process::http::UnsupportedMediaType;
 
@@ -250,6 +255,20 @@ TEST_P(HttpApiTest, UnsupportedContentMediaType)
       unknownMediaType);
 
   AWAIT_EXPECT_RESPONSE_STATUS_EQ(UnsupportedMediaType().status, response);
+}
+
+
+TEST_F(HttpApiTest, MethodGet)
+{
+  Try<PID<Master> > master = StartMaster();
+  ASSERT_SOME(master);
+
+  Future<Response> response = process::http::get(
+      master.get(),
+      "api/v1/scheduler");
+
+  AWAIT_READY(response);
+  AWAIT_EXPECT_RESPONSE_STATUS_EQ(MethodNotAllowed().status, response);
 }
 
 
@@ -558,6 +577,38 @@ TEST_P(HttpApiTest, UpdatePidToHttpSchedulerWithoutForce)
 
   Shutdown();
 }
+
+
+TEST_F(HttpApiTest, WrongHeaderAccept)
+{
+  master::Flags flags = CreateMasterFlags();
+  flags.credentials = None();
+  Try<PID<Master> > master = StartMaster(flags);
+  ASSERT_SOME(master);
+
+  hashmap<string, string> headers;
+  headers["Content-Type"] = "application/x-protobuf";
+  headers["Accept"] = "foo";
+  headers["Connection"] = "close";
+
+  Call call;
+  // Setting SUBSCRIBE type since it's the only Call that needs
+  // Accept HTTP header validation.
+  call.set_type(Call::SUBSCRIBE);
+
+  string body;
+  call.SerializeToString(&body);
+
+  Future<Response> response = process::http::post(
+      master.get(),
+      "api/v1/scheduler",
+      headers,
+      body);
+
+  AWAIT_READY(response);
+  AWAIT_EXPECT_RESPONSE_STATUS_EQ(NotAcceptable().status, response);
+}
+
 
 } // namespace tests {
 } // namespace internal {

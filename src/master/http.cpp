@@ -367,19 +367,13 @@ Future<Response> Master::Http::scheduler(const Request& request) const
                             request.method + " instead");
   }
 
-
-  if (!request.acceptsMediaType(mesos::internal::APPLICATION_PROTOBUF) &&
+  if (!request.acceptsMediaType(mesos::internal::APPLICATION_PROTOBUF) ||
       !request.acceptsMediaType(mesos::internal::APPLICATION_JSON)) {
     return NotAcceptable("Unsupported Accept: '" +
                          request.headers.get("Accept").get() +
                          "'; Expecting one of (" +
                          mesos::internal::APPLICATION_PROTOBUF + ", " +
                          mesos::internal::APPLICATION_JSON + ")");
-  }
-
-  Result<Credential> credential = authenticate(request);
-  if (credential.isError()) {
-    return Unauthorized("Mesos master", credential.error());
   }
 
   Option<string> contentType = request.headers.get("Content-Type");
@@ -389,7 +383,7 @@ Future<Response> Master::Http::scheduler(const Request& request) const
   }
 
   Result<v1::scheduler::Call> v1call = unmarshall(contentType.get(), request.body);
-  if (call.isError()) {
+  if (call_.isError() && call_.error() == "Unsupported") {
     return UnsupportedMediaType("Unsupported Content-Type: '" +
                                 contentType.get() +
                                 "'; Expecting one of (" +
