@@ -314,8 +314,8 @@ void Master::Http::log(const Request& request)
 }
 
 
-Try<scheduler::Call> unmarshall(const string& contentType,
-                                const string& body)
+Try<v1::scheduler::Call> unmarshall(const string& contentType,
+                                    const string& body)
 {
   v1::scheduler::Call v1Call;
 
@@ -330,16 +330,16 @@ Try<scheduler::Call> unmarshall(const string& contentType,
     if (call_.isError()) {
       return Error(call_.error());
     }
-    call = call_.get();
+    v1Call = call_.get();
   } else if (contentType == mesos::internal::APPLICATION_PROTOBUF) {
-    if (!call.ParseFromString(body)) {
+    if (!v1Call.ParseFromString(body)) {
       return Error("Failed to parse body into Call");
     }
   } else {
     return Error("Unsupported");
   }
 
-  return call;
+  return v1Call;
 }
 
 
@@ -382,8 +382,8 @@ Future<Response> Master::Http::scheduler(const Request& request) const
     return BadRequest("Expecting 'Content-Type' to be present");
   }
 
-  Result<v1::scheduler::Call> v1call = unmarshall(contentType.get(), request.body);
-  if (call_.isError() && call_.error() == "Unsupported") {
+  Try<v1::scheduler::Call> v1Call = unmarshall(contentType.get(), request.body);
+  if (v1Call.isError() && v1Call.error() == "Unsupported") {
     return UnsupportedMediaType("Unsupported Content-Type: '" +
                                 contentType.get() +
                                 "'; Expecting one of (" +
