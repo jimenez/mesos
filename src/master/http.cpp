@@ -325,7 +325,7 @@ Try<v1::scheduler::Call> unmarshall(const string& contentType,
       return Error(json.error());
     }
 
-    Try<v1::scheduler::Call> call_ = 
+    Try<v1::scheduler::Call> call_ =
       ::protobuf::parse<v1::scheduler::Call>(json.get());
     if (call_.isError()) {
       return Error(call_.error());
@@ -367,15 +367,6 @@ Future<Response> Master::Http::scheduler(const Request& request) const
                             request.method + " instead");
   }
 
-  if (!request.acceptsMediaType(mesos::internal::APPLICATION_PROTOBUF) ||
-      !request.acceptsMediaType(mesos::internal::APPLICATION_JSON)) {
-    return NotAcceptable("Unsupported Accept: '" +
-                         request.headers.get("Accept").get() +
-                         "'; Expecting one of (" +
-                         mesos::internal::APPLICATION_PROTOBUF + ", " +
-                         mesos::internal::APPLICATION_JSON + ")");
-  }
-
   Option<string> contentType = request.headers.get("Content-Type");
 
   if (contentType.isNone()) {
@@ -410,6 +401,15 @@ Future<Response> Master::Http::scheduler(const Request& request) const
   }
 
   if (call.type() == scheduler::Call::SUBSCRIBE) {
+    if (!request.acceptsMediaType(mesos::internal::APPLICATION_PROTOBUF) ||
+        !request.acceptsMediaType(mesos::internal::APPLICATION_JSON)) {
+      return NotAcceptable("Unsupported Accept: '" +
+                           request.headers.get("Accept").get() +
+                           "'; Expecting one of (" +
+                           mesos::internal::APPLICATION_PROTOBUF + ", " +
+                           mesos::internal::APPLICATION_JSON + ")");
+    }
+
     Pipe pipe;
     OK ok;
 

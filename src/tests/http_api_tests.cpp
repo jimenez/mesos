@@ -50,14 +50,12 @@ using mesos::v1::scheduler::Event;
 using process::Future;
 using process::PID;
 
-using process::http::Accepted;
 using process::http::BadRequest;
 using process::http::OK;
 using process::http::Pipe;
 using process::http::Response;
 using process::http::MethodNotAllowed;
 using process::http::NotAcceptable;
-using process::http::NotImplemented;
 using process::http::Unauthorized;
 using process::http::UnsupportedMediaType;
 
