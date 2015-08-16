@@ -1766,7 +1766,7 @@ void Slave::criu(
     const FrameworkID& frameworkId,
     const TaskID& taskId)
 {
-
+  ;
 }
 
 void Slave::killTask(
