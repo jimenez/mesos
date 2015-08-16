@@ -2527,6 +2527,39 @@ void Master::request(
 }
 
 
+void Masted::criu(
+                  Framework* framework,
+                  const scheduler::Call::CRIU &criu)
+{
+  CHECK_NOTNULL(framework);
+
+  Slave* slave = slaves.registered.get(criu.agent_id());
+
+  if (slave == NULL) {
+    LOG(WARNING) << "Cannot send framework message for framework "
+                 << *framework << " to slave " << criu.agent_id()
+                 << " because slave is not registered";
+    return;
+  }
+
+  if (!slave->connected) {
+    LOG(WARNING) << "Cannot send framework message for framework "
+                 << *framework << " to slave " << *slave
+                 << " because slave is disconnected";
+    return;
+  }
+
+  LOG(INFO) << "Processing CRIU MESSAGE call from framework "
+            << *framework << " to slave " << *slave;
+
+  Criumessage message_;
+  message_.mutable_slave_id()->MergeFrom(criu.agent_id());
+  message_.mutable_framework_id()->MergeFrom(framework->id());
+  message_.set_url(criu.url());
+  message_.task_id(criu.task_id());
+  send(slave->pid, message_);
+}
+
 void Master::launchTasks(
     const UPID& from,
     const FrameworkID& frameworkId,

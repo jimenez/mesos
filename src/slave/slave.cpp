@@ -422,6 +422,14 @@ void Slave::initialize()
       &KillTaskMessage::framework_id,
       &KillTaskMessage::task_id);
 
+
+  install<CriuMessage>(
+      &Slave::criu,
+      &CriuMessage::framework_id,
+      &CriuMessage::agent_id,
+      &CriuMessage::task_id
+      &CriuMessage::url);
+
   install<ShutdownExecutorMessage>(
       &Slave::shutdownExecutor,
       &ShutdownExecutorMessage::framework_id,
@@ -1752,6 +1760,14 @@ void Slave::runTasks(
   }
 }
 
+
+void Slave::criu(
+    const UPID& from,
+    const FrameworkID& frameworkId,
+    const TaskID& taskId)
+{
+
+}
 
 void Slave::killTask(
     const UPID& from,

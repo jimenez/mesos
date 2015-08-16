@@ -327,8 +327,9 @@ message Call {
       CHECKPOINT = 1;
       RESTORE = 2;
     }
-    required string url = 1;
+    required AgendID agent_id = 1;
     required TaskId task_id = 2;
+    required string url = 3;
   }
 
   // Identifies who generated this call. Master assigns a framework id

@@ -506,6 +506,10 @@ Future<Response> Master::Http::scheduler(const Request& request) const
       master->request(framework, call.request());
       return Accepted();
 
+    case scheduler::Call::CRIU:
+      master->criu(framework, call.criu());
+      return Accepted();
+
     default:
       // Should be caught during call validation above.
       LOG(FATAL) << "Unexpected " << call.type() << " call";
