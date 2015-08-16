@@ -2552,12 +2552,7 @@ void Masted::criu(
   LOG(INFO) << "Processing CRIU MESSAGE call from framework "
             << *framework << " to slave " << *slave;
 
-  Criumessage message_;
-  message_.mutable_slave_id()->MergeFrom(criu.agent_id());
-  message_.mutable_framework_id()->MergeFrom(framework->id());
-  message_.set_url(criu.url());
-  message_.task_id(criu.task_id());
-  send(slave->pid, message_);
+  send(slave->pid, criu);
 }
 
 void Master::launchTasks(

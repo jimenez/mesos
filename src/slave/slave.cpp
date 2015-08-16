@@ -423,12 +423,7 @@ void Slave::initialize()
       &KillTaskMessage::task_id);
 
 
-  install<CriuMessage>(
-      &Slave::criu,
-      &CriuMessage::framework_id,
-      &CriuMessage::agent_id,
-      &CriuMessage::task_id
-      &CriuMessage::url);
+  install<scheduler::Call::CRIU>(&Slave::criu)
 
   install<ShutdownExecutorMessage>(
       &Slave::shutdownExecutor,
@@ -1763,10 +1758,20 @@ void Slave::runTasks(
 
 void Slave::criu(
     const UPID& from,
-    const FrameworkID& frameworkId,
-    const TaskID& taskId)
+    const scheduler::Call::CRIU& call)
 {
-  ;
+  const FrameworkID& frameworkId = call.framework_id();
+  const AgentID& AgentId = call.agent_id();
+  const TaskID& taskId = call.task_id();
+  const string& url = call.url();
+
+  if (call.type() == CHECKPOINT) {
+    LOG(INFO) << "Asked to checkpoint task " << taskId
+              << " of framework " << frameworkId;
+  } else if (call.type() == RESTORE) {
+    LOG(INFO) << "Asked to restore task " << taskId
+              << " of framework " << frameworkId;
+  }
 }
 
 void Slave::killTask(
