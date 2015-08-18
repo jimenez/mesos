@@ -776,6 +776,10 @@ private:
       Framework* framework,
       const scheduler::Call::Request& request);
 
+  void criu(
+      Framework* framework,
+      const scheduler::Call::Criu& request);
+
   bool elected() const
   {
     return leader.isSome() && leader.get() == info_;

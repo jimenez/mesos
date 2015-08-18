@@ -423,7 +423,7 @@ void Slave::initialize()
       &KillTaskMessage::task_id);
 
 
-  install<scheduler::Call::CRIU>(&Slave::criu)
+  install<scheduler::Call::Criu>(&Slave::criu);
 
   install<ShutdownExecutorMessage>(
       &Slave::shutdownExecutor,
@@ -1758,10 +1758,10 @@ void Slave::runTasks(
 
 void Slave::criu(
     const UPID& from,
-    const scheduler::Call::CRIU& call)
+    const scheduler::Call::Criu& call)
 {
   const FrameworkID& frameworkId = call.framework_id();
-  const AgentID& AgentId = call.agent_id();
+  const SlaveID& slaveId = call.slave_id();
   const TaskID& taskId = call.task_id();
   const string& url = call.url();
 

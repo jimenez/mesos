@@ -51,6 +51,7 @@ message Event {
     // close the existing subscription connection and resubscribe
     // using a backoff strategy.
     HEARTBEAT = 8;
+    CRIU = 9;
   }
 
   // First event received when the scheduler subscribes.
@@ -135,6 +136,15 @@ message Event {
     required string message = 1;
   }
 
+  message Criu {
+    enum Type {
+      CHECKPOINTED = 1;
+      RESTORED = 2;
+    }
+    required TaskID current_task_id= 1;
+    optional TaskID old_task_id = 2;
+  }
+
   // Type of the event, indicates which optional field below should be
   // present if that type has a nested message definition.
   required Type type = 1;
@@ -170,7 +180,7 @@ message Call {
     RECONCILE = 9;   // See 'Reconcile' below.
     MESSAGE = 10;    // See 'Message' below.
     REQUEST = 11;    // See 'Request' below.
-
+    CRIU = 12;
     // TODO(benh): Consider adding an 'ACTIVATE' and 'DEACTIVATE' for
     // already subscribed frameworks as a way of stopping offers from
     // being generated and other events from being sent by the master.
@@ -298,6 +308,16 @@ message Call {
     required SlaveID slave_id = 1;
     required ExecutorID executor_id = 2;
     required bytes data = 3;
+  }
+
+  message Criu {
+    enum Type {
+      CHECKPOINT = 1;
+      RESTORE = 2;
+    }
+    required SlaveID slave_id = 1;
+    required TaskID task_id = 2;
+    required string url = 3;
   }
 
   // Requests a specific set of resources from Mesos's allocator. If

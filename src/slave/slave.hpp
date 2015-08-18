@@ -127,6 +127,9 @@ public:
       const TaskInfo& task);
 
   process::Future<bool> unschedule(const std::string& path);
+  virtual void criu(
+      const process::UPID& from,
+      const scheduler::Call::Criu& criu);
 
   // Made 'virtual' for Slave mocking.
   virtual void killTask(

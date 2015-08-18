@@ -51,6 +51,7 @@ message Event {
     // close the existing subscription connection and resubscribe
     // using a backoff strategy.
     HEARTBEAT = 8;
+    CRIU = 9;      // See 'CRIU' below.
   }
 
   // First event received when the scheduler subscribes.
@@ -133,6 +134,15 @@ message Event {
   // HTTP response codes.
   message Error {
     required string message = 1;
+  }
+
+  message Criu {
+    enum Type {
+      CHECKPOINTED = 1;
+      RESTORED = 2;
+    }
+    required TaskID current_task_id= 1;
+    optional TaskID old_task_id = 2;
   }
 
   // Type of the event, indicates which optional field below should be
