@@ -44,6 +44,9 @@
 #include <process/id.hpp>
 #include <process/time.hpp>
 
+#include <process/io.hpp>
+#include <process/subprocess.hpp>
+
 #include <stout/bytes.hpp>
 #include <stout/check.hpp>
 #include <stout/duration.hpp>
@@ -1760,18 +1763,40 @@ void Slave::criu(
     const UPID& from,
     const scheduler::Call::Criu& call)
 {
-  const FrameworkID& frameworkId = call.framework_id();
-  const SlaveID& slaveId = call.slave_id();
-  const TaskID& taskId = call.task_id();
-  const string& url = call.url();
-
-  if (call.type() == CHECKPOINT) {
-    LOG(INFO) << "Asked to checkpoint task " << taskId
-              << " of framework " << frameworkId;
-  } else if (call.type() == RESTORE) {
-    LOG(INFO) << "Asked to restore task " << taskId
-              << " of framework " << frameworkId;
+  std::vector<string> args;
+  if (call.type() == scheduler::Call::Criu::CHECKPOINT) {
+    LOG(INFO) << "CHECKPOINTING Task " << call.task_id()
+              << "for container: " << call.container_id();
+    args.push_back("-c");
+    args.push_back(call.container_id());
+  } else if (call.type() == scheduler::Call::Criu::RESTORE) {
+    LOG(INFO) << "RESTORING Task " << call.task_id();
+    args.push_back("-r");
+    args.push_back(call.container_id());
   }
+  auto subprocess = process::subprocess(
+                                        "docker_cr -c "+call.container_id(),
+                                        process::Subprocess::PATH("/dev/null"),
+                                        process::Subprocess::PIPE(),
+                                        process::Subprocess::PIPE());
+  if (subprocess.isError()) {
+    LOG(ERROR) <<  "Failed to launch CRIU : " + subprocess.error();
+  }
+  Option<Subprocess> cmd = subprocess.get();
+
+  std::list<Future<string>> output;
+  output.push_back(io::read(cmd.get().out().get()));
+  output.push_back(io::read(cmd.get().err().get()));
+  cmd.get();
+
+  LOG(INFO) << "excuted command";
+  scheduler::Event::Criu criuEvent;
+  criuEvent.set_type(scheduler::Event::Criu::CHECKPOINTED);
+  criuEvent.mutable_current_task_id()->CopyFrom(call.task_id());
+  scheduler::Event event;
+  event.mutable_criu()->CopyFrom(criuEvent);
+  event.set_type(scheduler::Event::CRIU);
+  send(master.get(), event);
 }
 
 void Slave::killTask(

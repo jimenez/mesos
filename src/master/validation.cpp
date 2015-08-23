@@ -133,6 +133,12 @@ Option<Error> validate(const mesos::scheduler::Call& call)
       }
       return None();
 
+    case mesos::scheduler::Call::CRIU:
+      if (!call.has_criu()) {
+        return Error("Expecting 'criu' to be present");
+      }
+      return None();
+
     default:
       return Error("Unknown call type");
   }

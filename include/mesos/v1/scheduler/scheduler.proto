@@ -141,8 +141,9 @@ message Event {
       CHECKPOINTED = 1;
       RESTORED = 2;
     }
-    required TaskID current_task_id= 1;
-    optional TaskID old_task_id = 2;
+    required Type type = 1;
+    required TaskID current_task_id = 2;
+    optional TaskID old_task_id = 3;
   }
 
   // Type of the event, indicates which optional field below should be
@@ -156,6 +157,7 @@ message Event {
   optional Message message = 6;
   optional Failure failure = 7;
   optional Error error = 8;
+  optional Criu criu = 9;
 }
 
 
@@ -180,7 +182,7 @@ message Call {
     RECONCILE = 9;   // See 'Reconcile' below.
     MESSAGE = 10;    // See 'Message' below.
     REQUEST = 11;    // See 'Request' below.
-
+    CRIU = 12;
     // TODO(benh): Consider adding an 'ACTIVATE' and 'DEACTIVATE' for
     // already subscribed frameworks as a way of stopping offers from
     // being generated and other events from being sent by the master.
@@ -310,6 +312,18 @@ message Call {
     required bytes data = 3;
   }
 
+
+  message Criu {
+    enum Type {
+      CHECKPOINT = 1;
+      RESTORE = 2;
+    }
+    required Type type = 1;
+    required AgentID agent_id = 2;
+    required TaskID task_id = 3;
+    required string container_id = 4;
+  }
+
   // Requests a specific set of resources from Mesos's allocator. If
   // the allocator has support for this, corresponding offers will be
   // sent asynchronously via the OFFERS event(s).
@@ -341,4 +355,5 @@ message Call {
   optional Reconcile reconcile = 9;
   optional Message message = 10;
   optional Request request = 11;
+  optional Criu criu = 12;
 }
