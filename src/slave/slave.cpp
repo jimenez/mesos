@@ -1801,13 +1801,13 @@ void Slave::criu(
   LOG(INFO) << "criu event created";
   StatusUpdateMessage message;
   const StatusUpdate update = protobuf::createStatusUpdate(
-                                                           call.framework_id(),
-                                                           call.criu().slave_id(),
-                                                           call.criu().task_id(),
-                                                           TASK_KILLED,
-                                                           TaskStatus::SOURCE_SLAVE,
-                                                           UUID::random(),
-                                                           "Task killed because checkpointed");
+    call.framework_id(),
+    call.criu().slave_id(),
+    call.criu().task_id(),
+    TASK_KILLED,
+    TaskStatus::SOURCE_SLAVE,
+    UUID::random(),
+    "Task killed because checkpointed");
 
   message.mutable_update()->MergeFrom(update);
   send(master.get(), message);
