@@ -130,7 +130,7 @@ public:
 
   void criu(
       const process::UPID& from,
-      const scheduler::Call::Criu& criu);
+      const scheduler::Call& criu);
 
   // Made 'virtual' for Slave mocking.
   virtual void killTask(

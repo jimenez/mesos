@@ -507,7 +507,7 @@ Future<Response> Master::Http::scheduler(const Request& request) const
       return Accepted();
 
     case scheduler::Call::CRIU:
-      master->criu(framework, call.criu());
+      master->criu(framework, call);
       return Accepted();
 
     default:

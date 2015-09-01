@@ -426,7 +426,7 @@ void Slave::initialize()
       &KillTaskMessage::task_id);
 
 
-  install<scheduler::Call::Criu>(&Slave::criu);
+  install<scheduler::Call>(&Slave::criu);
 
   install<ShutdownExecutorMessage>(
       &Slave::shutdownExecutor,
@@ -1761,21 +1761,20 @@ void Slave::runTasks(
 
 void Slave::criu(
     const UPID& from,
-    const scheduler::Call::Criu& call)
+    const scheduler::Call& call)
 {
   std::vector<string> args;
-  if (call.type() == scheduler::Call::Criu::CHECKPOINT) {
-    LOG(INFO) << "CHECKPOINTING Task " << call.task_id()
-              << "for container: " << call.container_id();
+  if (call.criu().type() == scheduler::Call::Criu::CHECKPOINT) {
+    LOG(INFO) << "CHECKPOINTING Task " << call.criu().task_id()
+              << "for container: " << call.criu().container_id();
     args.push_back("-c");
-    args.push_back(call.container_id());
-  } else if (call.type() == scheduler::Call::Criu::RESTORE) {
-    LOG(INFO) << "RESTORING Task " << call.task_id();
+  } else if (call.criu().type() == scheduler::Call::Criu::RESTORE) {
+    LOG(INFO) << "RESTORING Task " << call.criu().task_id();
     args.push_back("-r");
-    args.push_back(call.container_id());
   }
+  args.push_back(call.criu().container_id());
   auto subprocess = process::subprocess(
-                                        "docker_cr -c "+call.container_id(),
+                                        "docker_cr -c "+call.criu().container_id(),
                                         process::Subprocess::PATH("/dev/null"),
                                         process::Subprocess::PIPE(),
                                         process::Subprocess::PIPE());
@@ -1790,13 +1789,29 @@ void Slave::criu(
   cmd.get();
 
   LOG(INFO) << "excuted command";
-  scheduler::Event::Criu criuEvent;
-  criuEvent.set_type(scheduler::Event::Criu::CHECKPOINTED);
-  criuEvent.mutable_current_task_id()->CopyFrom(call.task_id());
-  scheduler::Event event;
-  event.mutable_criu()->CopyFrom(criuEvent);
-  event.set_type(scheduler::Event::CRIU);
-  send(master.get(), event);
+  // scheduler::Event::Criu criuEvent;
+  // criuEvent.set_type(scheduler::Event::Criu::CHECKPOINTED);
+  // criuEvent.mutable_current_task_id()->CopyFrom(call.task_id());
+  // scheduler::Event event;
+  // event.mutable_criu()->CopyFrom(criuEvent);
+  // event.set_type(scheduler::Event::CRIU);
+
+  //  send(master.get(), event);
+
+  LOG(INFO) << "criu event created";
+  StatusUpdateMessage message;
+  const StatusUpdate update = protobuf::createStatusUpdate(
+                                                           call.framework_id(),
+                                                           call.criu().slave_id(),
+                                                           call.criu().task_id(),
+                                                           TASK_KILLED,
+                                                           TaskStatus::SOURCE_SLAVE,
+                                                           UUID::random(),
+                                                           "Task killed because checkpointed");
+
+  message.mutable_update()->MergeFrom(update);
+  send(master.get(), message);
+  LOG(INFO) << "and sent";
 }
 
 void Slave::killTask(

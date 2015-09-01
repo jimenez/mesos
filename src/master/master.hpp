@@ -779,7 +779,7 @@ private:
 
   void criu(
       Framework* framework,
-      const scheduler::Call::Criu& request);
+      const scheduler::Call& request);
 
   bool elected() const
   {

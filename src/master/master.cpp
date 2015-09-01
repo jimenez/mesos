@@ -2529,15 +2529,15 @@ void Master::request(
 
 void Master::criu(
                   Framework* framework,
-                  const scheduler::Call::Criu &criu)
+                  const scheduler::Call &criu)
 {
   CHECK_NOTNULL(framework);
 
-  Slave* slave = slaves.registered.get(criu.slave_id());
+  Slave* slave = slaves.registered.get(criu.criu().slave_id());
 
   if (slave == NULL) {
     LOG(WARNING) << "Cannot send framework message for framework "
-                 << *framework << " to slave " << criu.slave_id()
+                 << *framework << " to slave " << criu.criu().slave_id()
                  << " because slave is not registered";
     return;
   }
