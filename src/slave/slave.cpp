@@ -1774,10 +1774,10 @@ void Slave::criu(
   }
   args.push_back(call.criu().container_id());
   auto subprocess = process::subprocess(
-                                        "docker_cr -c "+call.criu().container_id(),
-                                        process::Subprocess::PATH("/dev/null"),
-                                        process::Subprocess::PIPE(),
-                                        process::Subprocess::PIPE());
+    "docker_cr -c "+call.criu().container_id(),
+    process::Subprocess::PATH("/dev/null"),
+    process::Subprocess::PIPE(),
+    process::Subprocess::PIPE());
   if (subprocess.isError()) {
     LOG(ERROR) <<  "Failed to launch CRIU : " + subprocess.error();
   }
