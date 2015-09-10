@@ -44,9 +44,6 @@ message Event {
     SHUTDOWN = 6;
 
     ERROR = 7;        // See 'Error' below.
-
-    // Periodic heartbeats sent by the slave.
-    HEARTBEAT = 8;
   }
 
   // First event received when the executor subscribes.

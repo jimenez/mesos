@@ -210,7 +210,6 @@ CXX_PROTOS =								\
   ../include/mesos/v1/scheduler/scheduler.pb.h
 
 
-
 JAVA_PROTOS =								\
   java/generated/org/apache/mesos/Protos.java				\
   java/generated/org/apache/mesos/containerizer/Protos.java
