@@ -126,11 +126,12 @@ message Event {
     MESSAGE = 3;      // See 'Message' below.
   }
 
-  // First event received when the executor subscribes.
+  // Request to subscribe with the slave. If subscribing after a disconnection,
+  // it must include a list of all the tasks and updates which haven't been
+  // acknowledged by the scheduler.
   message Subscribe {
-    required ExecutorInfo executor_info = 1;
-    repeated TaskInfo tasks = 2;
-    repeated Update updates = 3;
+    repeated TaskInfo tasks = 1;
+    repeated Update updates = 2;
   }
 
   // Notifies the scheduler that a task has transitioned from one
@@ -157,14 +158,15 @@ message Event {
   }
 
   // Identifies the executor which generated this call.
-  optional ExecutorID executor_id = 1;
+  required ExecutorID executor_id = 1;
+  required FrameworkID framework_id = 2;
 
   // Type of the call, indicates which optional field below should be
   // present if that type has a nested message definition.
   // In case type is SUBSCRIBED, no message needs to be set.
-  required Type type = 2;
+  required Type type = 3;
 
-  optional Subscribe subscribe = 3;
-  optional Update update = 4;
-  optional Message message = 5;
+  optional Subscribe subscribe = 4;
+  optional Update update = 5;
+  optional Message message = 6;
 }
