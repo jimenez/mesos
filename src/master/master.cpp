@@ -1888,8 +1888,8 @@ void Master::subscribe(
 
   const FrameworkInfo& frameworkInfo = subscribe.framework_info();
 
-  LOG(INFO) << "Received subscription request for"
-            << " HTTP framework '" << frameworkInfo.name() << "'";
+  VLOG(1) << "Received subscription request for"
+          << " HTTP framework '" << frameworkInfo.name() << "'";
 
   Option<Error> validationError = None();
 

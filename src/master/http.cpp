@@ -337,6 +337,7 @@ string Master::Http::SCHEDULER_HELP()
 
 Future<Response> Master::Http::scheduler(const Request& request) const
 {
+  VLOG(1) << "Received Call request";
   // TODO(vinod): Add metrics for rejected requests.
 
   // TODO(vinod): Add support for rate limiting.
@@ -409,6 +410,10 @@ Future<Response> Master::Http::scheduler(const Request& request) const
   }
 
   if (call.type() == scheduler::Call::SUBSCRIBE) {
+    LOG(INFO) << "Received subscription request for"
+              << " HTTP framework '" << call.subscribe().framework_info().name()
+              << "'";
+
     // We default to JSON since an empty 'Accept' header
     // results in all media types considered acceptable.
     ContentType responseContentType;

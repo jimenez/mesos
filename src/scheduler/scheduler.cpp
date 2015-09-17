@@ -128,7 +128,8 @@ public:
     Try<Nothing> load = flags.load("MESOS_");
 
     if (load.isError()) {
-      EXIT(1) << "Failed to load flags: " << load.error();
+      error("Failed to load flags: " + load.error());
+      return;
     }
 
     // Initialize libprocess (done here since at some point we might
@@ -164,7 +165,8 @@ public:
       MasterDetector::create(pid.isSome() ? string(pid.get()) : master);
 
     if (create.isError()) {
-      EXIT(1) << "Failed to create a master detector: " << create.error();
+      error("Failed to create a master detector:" + create.error());
+      return;
     }
 
     // Save the detector so we can delete it later.
@@ -191,6 +193,7 @@ public:
     // NOTE: We enqueue the calls to guarantee that a call is sent only after
     // a response has been received for the previous call.
     // TODO(vinod): Use HTTP pipelining instead.
+    VLOG(1) << "Enqueuing Call";
     calls.push(call);
 
     if (calls.size() > 1) {
@@ -283,6 +286,7 @@ protected:
 
   Future<Nothing> _send(const Call& call)
   {
+    VLOG(1) << "ATTEMPT Sending " << call.type() << " call to " << master.get();
     if (master.isNone()) {
       drop(call, "Disconnected");
       return Nothing();
@@ -302,7 +306,7 @@ protected:
     // the scheduler driver does.
 
     const string body = serialize(contentType, call);
-    const http::Headers headers{{"Accept", stringify(contentType)}};
+    const hashmap<string, string> headers{{"Accept", stringify(contentType)}};
 
     Future<Response> response;
 
@@ -344,7 +348,8 @@ protected:
       return;
     }
 
-    if (response->code == process::http::Status::OK) {
+    if (response.get().status == process::http::statuses[200]) {
+      VLOG(1) << "Received response 200 OK for" << call.type();
       // Only SUBSCRIBE call should get a "200 OK" response.
       CHECK_EQ(Call::SUBSCRIBE, call.type());
       CHECK_EQ(response.get().type, http::Response::PIPE);
@@ -365,13 +370,13 @@ protected:
       return;
     }
 
-    if (response->code == process::http::Status::ACCEPTED) {
+    if (response.get().status == process::http::statuses[202]) {
       // Only non SUBSCRIBE calls should get a "202 Accepted" response.
       CHECK_NE(Call::SUBSCRIBE, call.type());
       return;
     }
 
-    if (response->code == process::http::Status::SERVICE_UNAVAILABLE) {
+    if (response.get().status == process::http::statuses[503]) {
       // This could happen if the master hasn't realized it is the leader yet
       // or is still in the process of recovery.
       LOG(WARNING) << "Received '" << response.get().status << "' ("
@@ -547,6 +552,7 @@ Mesos::~Mesos()
 
 void Mesos::send(const Call& call)
 {
+  VLOG(1) << "Dispatching Call";
   dispatch(process, &MesosProcess::send, call);
 }
 
