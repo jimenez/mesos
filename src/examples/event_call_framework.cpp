@@ -102,6 +102,7 @@ public:
 
   void connected()
   {
+    cout << "Event Call scheduler doing registration" << endl;
     doReliableRegistration();
   }
 
@@ -301,6 +302,7 @@ private:
   void doReliableRegistration()
   {
     if (state == SUBSCRIBED) {
+      cout << "Event Call scheduler already Subscribed" << endl;
       return;
     }
 
@@ -316,7 +318,7 @@ private:
     if (framework.has_id()) {
       subscribe->set_force(true);
     }
-
+    cout << "Event Call scheduler Subscribing" << endl;
     mesos.send(call);
 
     process::delay(Seconds(1),
