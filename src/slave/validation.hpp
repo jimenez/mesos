@@ -24,9 +24,6 @@
 namespace mesos {
 namespace internal {
 namespace slave {
-
-struct Slave;
-
 namespace validation {
 namespace executor {
 namespace call {
