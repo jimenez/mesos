@@ -16,15 +16,7 @@
  * limitations under the License.
  */
 
-#include <string>
-#include <vector>
-
-#include <glog/logging.h>
-
 #include "slave/validation.hpp"
-
-using std::string;
-using std::vector;
 
 namespace mesos {
 namespace internal {
