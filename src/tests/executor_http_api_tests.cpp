@@ -337,6 +337,8 @@ TEST_P(ExecutorHttpApiTest, DefaultAccept)
 
   call.mutable_subscribe();
 
+  Call::Subscribe* subscribe = call.mutable_subscribe();
+
   // Retrieve the parameter passed as content type to this test.
   const ContentType contentType = GetParam();
 
@@ -387,6 +389,8 @@ TEST_P(ExecutorHttpApiTest, NoAcceptHeader)
   call.set_type(Call::SUBSCRIBE);
 
   call.mutable_subscribe();
+
+  Call::Subscribe* subscribe = call.mutable_subscribe();
 
   Future<Response> response = process::http::streaming::post(
       slave.get(),
