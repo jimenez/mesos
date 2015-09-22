@@ -16,6 +16,9 @@
  * limitations under the License.
  */
 
+#ifndef __VALIDATION_HPP__
+#define __VALIDATION_HPP__
+
 #include <mesos/executor/executor.hpp>
 
 #include <stout/error.hpp>
@@ -25,6 +28,7 @@ namespace mesos {
 namespace internal {
 namespace slave {
 namespace validation {
+
 namespace executor {
 namespace call {
 
@@ -38,3 +42,5 @@ Option<Error> validate(const mesos::executor::Call& call);
 } // namespace slave {
 } // namespace internal {
 } // namespace mesos {
+
+#endif // __VALIDATION_HPP__

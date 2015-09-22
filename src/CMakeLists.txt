@@ -81,6 +81,7 @@ set(AGENT_SRC
   slave/slave.cpp
   slave/state.cpp
   slave/status_update_manager.cpp
+  slave/validation.cpp
   slave/containerizer/containerizer.cpp
   slave/containerizer/composing.cpp
   slave/containerizer/composing.hpp
