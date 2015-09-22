@@ -334,6 +334,7 @@ TEST_P(ExecutorHttpApiTest, DefaultAccept)
 
   call.mutable_framework_id()->set_value("dummy_framework_id");
   call.mutable_executor_id()->set_value("dummy_executor_id");
+  call.mutable_subscribe();
 
   // Retrieve the parameter passed as content type to this test.
   const ContentType contentType = GetParam();
@@ -384,6 +385,7 @@ TEST_P(ExecutorHttpApiTest, NoAcceptHeader)
 
   call.mutable_framework_id()->set_value("dummy_framework_id");
   call.mutable_executor_id()->set_value("dummy_executor_id");
+  call.mutable_subscribe();
 
   Future<Response> response = process::http::streaming::post(
       slave.get(),
@@ -429,6 +431,7 @@ TEST_P(ExecutorHttpApiTest, NotAcceptable)
 
   call.mutable_framework_id()->set_value("dummy_framework_id");
   call.mutable_executor_id()->set_value("dummy_executor_id");
+  call.mutable_subscribe();
 
   Future<Response> response = process::http::streaming::post(
       slave.get(),
