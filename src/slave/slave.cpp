@@ -2365,6 +2365,19 @@ void Slave::_statusUpdateAcknowledgement(
 }
 
 
+void Slave::drop(
+    const UPID& from,
+    const executor::Call& call,
+    const string& message)
+{
+  // TODO(ijimenez): Increment a metric.
+
+  LOG(ERROR) << "Dropping " << call.type() << " call"
+             << " from framework " << call.framework_id()
+             << " at " << from << ": " << message;
+}
+
+
 void Slave::registerExecutor(
     const UPID& from,
     const FrameworkID& frameworkId,
