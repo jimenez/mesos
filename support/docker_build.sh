@@ -111,13 +111,7 @@ TAG=mesos-`date +%s`-$RANDOM
 # Build the Docker image.
 # TODO(vinod): Instead of building Docker images on the fly host the
 # images on DockerHub and use them.
-docker build -t $TAG .
-
-# Running build with a non cached build in case the failure is
-# due an outdated layer in the image.
-if (($? > 0)); then
-    docker build --no-cache=true -t $TAG .
-fi
+docker build --no-cache=true -t $TAG .
 
 # Set a trap to delete the image on exit.
 trap "docker rmi $TAG" EXIT
