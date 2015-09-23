@@ -399,6 +399,8 @@ void Slave::initialize()
   startTime = Clock::now();
 
   // Install protobuf handlers.
+  install<Executor::Call>(&Slave::receive);
+
   install<SlaveRegisteredMessage>(
       &Slave::registered,
       &SlaveRegisteredMessage::slave_id,
@@ -2375,6 +2377,32 @@ void Slave::drop(
   LOG(ERROR) << "Dropping " << call.type() << " call"
              << " from framework " << call.framework_id()
              << " at " << from << ": " << message;
+}
+
+
+void Slave::receive(
+    const UPID& from,
+    const executor::Call& call)
+{
+  Option<Error> error = validation::executor::call::validate(call);
+
+  switch (call.type()) {
+    case executor::Call::UPDATE:
+      drop(from, call, "not implemented");
+      break;
+
+    case executor::Call::MESSAGE:
+      drop(from, call, "not implemented");
+      break;
+
+    default:
+      // Should be caught during call validation above.
+      LOG(FATAL) << "Unexpected " << call.type() << " call"
+                 << " from framework " << call.framework_id()
+                 << " from executor " << call.executor_id()
+                 << " at " << from;
+      break;
+  }
 }
 
 

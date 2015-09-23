@@ -162,6 +162,10 @@ public:
       const executor::Call& call,
       const std::string& message);
 
+  void receive(
+      const process::UPID& from,
+      const executor::Call& call);
+
   void registerExecutor(
       const process::UPID& from,
       const FrameworkID& frameworkId,
