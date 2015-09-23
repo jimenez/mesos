@@ -32,6 +32,8 @@
 #include <mesos/resources.hpp>
 #include <mesos/type_utils.hpp>
 
+#include <mesos/executor/executor.hpp>
+
 #include <mesos/module/authenticatee.hpp>
 
 #include <mesos/slave/qos_controller.hpp>
@@ -154,6 +156,11 @@ public:
       const process::UPID& pid);
 
   void checkpointResources(const std::vector<Resource>& checkpointedResources);
+
+  void drop(
+      const process::UPID& from,
+      const executor::Call& call,
+      const std::string& message);
 
   void registerExecutor(
       const process::UPID& from,
