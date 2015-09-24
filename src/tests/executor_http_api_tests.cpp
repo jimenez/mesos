@@ -446,6 +446,67 @@ TEST_P(ExecutorHttpApiTest, NotAcceptable)
   Shutdown();
 }
 
+
+TEST_F(ExecutorHttpApiTest, ValidProtobufInvalidCall)
+{
+  Try<PID<Master>> master = StartMaster();
+  ASSERT_SOME(master);
+
+  Try<PID<Slave>> slave = StartSlave();
+  ASSERT_SOME(slave);
+
+  Future<Nothing> __recover = FUTURE_DISPATCH(_, &Slave::__recover);
+  AWAIT_READY(__recover);
+
+  // We send a valid Call protobuf message with missing
+  // required message per type.
+  Call call;
+  call.set_type(Call::SUBSCRIBE);
+  call.mutable_framework_id()->set_value("dummy_framework_id");
+  call.mutable_executor_id()->set_value("dummy_executor_id");
+
+  hashmap<string, string> headers;
+  headers["Accept"] = APPLICATION_JSON;
+
+  Future<Response> responseSubscribe = process::http::post(
+      slave.get(),
+      "api/v1/executor",
+      headers,
+      serialize(ContentType::PROTOBUF, call),
+      APPLICATION_PROTOBUF);
+
+  AWAIT_EXPECT_RESPONSE_STATUS_EQ(BadRequest().status, responseSubscribe);
+
+  call.set_type(Call::UPDATE);
+  call.mutable_framework_id()->set_value("dummy_framework_id");
+  call.mutable_executor_id()->set_value("dummy_executor_id");
+
+  Future<Response> responseUpdate = process::http::post(
+      slave.get(),
+      "api/v1/executor",
+      headers,
+      serialize(ContentType::PROTOBUF, call),
+      APPLICATION_PROTOBUF);
+
+  AWAIT_EXPECT_RESPONSE_STATUS_EQ(BadRequest().status, responseUpdate);
+
+  call.set_type(Call::MESSAGE);
+  call.mutable_framework_id()->set_value("dummy_framework_id");
+  call.mutable_executor_id()->set_value("dummy_executor_id");
+
+  Future<Response> responseMessage = process::http::post(
+      slave.get(),
+      "api/v1/executor",
+      headers,
+      serialize(ContentType::PROTOBUF, call),
+      APPLICATION_PROTOBUF);
+
+  AWAIT_EXPECT_RESPONSE_STATUS_EQ(BadRequest().status, responseMessage);
+
+  Shutdown();
+}
+
+
 } // namespace tests {
 } // namespace internal {
 } // namespace mesos {
