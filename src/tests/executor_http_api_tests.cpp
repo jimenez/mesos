@@ -99,11 +99,11 @@ TEST_F(ExecutorHttpApiTest, NoContentType)
   Clock::settle();
 
   Call call;
+  call.mutable_framework_id()->set_value("dummy_framework_id");
+  call.mutable_executor_id()->set_value("dummy_executor_id");
   call.set_type(Call::MESSAGE);
 
   call.mutable_message()->set_data("hello world");
-  call.mutable_framework_id()->set_value("dummy_framework_id");
-  call.mutable_executor_id()->set_value("dummy_executor_id");
 
   Future<Response> response = process::http::post(
       slave.get(),
@@ -215,10 +215,11 @@ TEST_P(ExecutorHttpApiTest, UnsupportedContentMediaType)
   headers["Accept"] = stringify(contentType);
 
   Call call;
-  call.set_type(Call::SUBSCRIBE);
-
   call.mutable_framework_id()->set_value("dummy_framework_id");
   call.mutable_executor_id()->set_value("dummy_executor_id");
+  call.set_type(Call::SUBSCRIBE);
+
+  call.mutable_subscribe();
 
   const string unknownMediaType = "application/unknown-media-type";
 
@@ -258,11 +259,11 @@ TEST_P(ExecutorHttpApiTest, MessageFromUnknownFramework)
   headers["Accept"] = stringify(contentType);
 
   Call call;
+  call.mutable_framework_id()->set_value("dummy_framework_id");
+  call.mutable_executor_id()->set_value("dummy_executor_id");
   call.set_type(Call::MESSAGE);
 
   call.mutable_message()->set_data("hello world");
-  call.mutable_framework_id()->set_value("dummy_framework_id");
-  call.mutable_executor_id()->set_value("dummy_executor_id");
 
   Future<Response> response = process::http::post(
       slave.get(),
@@ -330,10 +331,10 @@ TEST_P(ExecutorHttpApiTest, DefaultAccept)
 
   // Only subscribe needs to 'Accept' JSON or protobuf.
   Call call;
-  call.set_type(Call::SUBSCRIBE);
-
   call.mutable_framework_id()->set_value("dummy_framework_id");
   call.mutable_executor_id()->set_value("dummy_executor_id");
+  call.set_type(Call::SUBSCRIBE);
+
   call.mutable_subscribe();
 
   // Retrieve the parameter passed as content type to this test.
@@ -381,10 +382,10 @@ TEST_P(ExecutorHttpApiTest, NoAcceptHeader)
 
   // Only subscribe needs to 'Accept' JSON or protobuf.
   Call call;
-  call.set_type(Call::SUBSCRIBE);
-
   call.mutable_framework_id()->set_value("dummy_framework_id");
   call.mutable_executor_id()->set_value("dummy_executor_id");
+  call.set_type(Call::SUBSCRIBE);
+
   call.mutable_subscribe();
 
   Future<Response> response = process::http::streaming::post(
@@ -427,10 +428,10 @@ TEST_P(ExecutorHttpApiTest, NotAcceptable)
 
   // Only subscribe needs to 'Accept' JSON or protobuf.
   Call call;
-  call.set_type(Call::SUBSCRIBE);
-
   call.mutable_framework_id()->set_value("dummy_framework_id");
   call.mutable_executor_id()->set_value("dummy_executor_id");
+  call.set_type(Call::SUBSCRIBE);
+
   call.mutable_subscribe();
 
   Future<Response> response = process::http::streaming::post(
