@@ -2380,6 +2380,7 @@ void Slave::drop(
 
   LOG(ERROR) << "Dropping " << call.type() << " call"
              << " from framework " << call.framework_id()
+             << " with executor " << call.executor_id()
              << " at " << from << ": " << message;
 }
 
