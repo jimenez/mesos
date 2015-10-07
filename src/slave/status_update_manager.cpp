@@ -488,7 +488,7 @@ void StatusUpdateManagerProcess::timeout(const Duration& duration)
 }
 
 
-StatusUpdateStream* StatusUpdateManagerProcess::createStatusUpdateStream(
+  StatusUpdateStream* StatusUpdateManagerProcess::createStatusUpdateStream(
     const TaskID& taskId,
     const FrameworkID& frameworkId,
     const SlaveID& slaveId,

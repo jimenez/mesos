@@ -2753,16 +2753,6 @@ void Slave::statusUpdate(StatusUpdate update, const UPID& pid)
 {
   LOG(INFO) << "Handling status update " << update << " from " << pid;
 
-  CHECK(state == RECOVERING || state == DISCONNECTED ||
-        state == RUNNING || state == TERMINATING)
-    << state;
-
-  if (!update.has_uuid()) {
-    LOG(WARNING) << "Ignoring status update " << update << " without 'uuid'";
-    metrics.invalid_status_updates++;
-    return;
-  }
-
   // TODO(bmahler): With the HTTP API, we must validate the UUID
   // inside the TaskStatus. For now, we ensure that the uuid of task
   // status matches the update's uuid, in case the executor is using
@@ -2791,6 +2781,35 @@ void Slave::statusUpdate(StatusUpdate update, const UPID& pid)
   if (framework == NULL) {
     LOG(WARNING) << "Ignoring status update " << update
                  << " for unknown framework " << update.framework_id();
+    // TODO(ijimenez): add this metrics as part of HTTP API Call validation.
+    metrics.invalid_status_updates++;
+    return;
+  }
+
+  executor::Call::Update call;
+  call.mutable_status()->CopyFrom(update.status());
+  call.mutable_uuid()->CopyFrom(update.uuid());
+  call.mutable_timestamp()->CopyFrom(update.timestamp());
+
+  statusUpdate(framework, executor, call);
+}
+
+
+void Slave::statusUpdate(Framework* framework,
+                         Executor* executor,
+                         executor::Call::Update update)
+{
+  LOG(INFO) << "Status update from executor "
+            << update.executor_id()
+            << " from framework "
+            << update.framework_id();
+
+  CHECK(state == RECOVERING || state == DISCONNECTED ||
+        state == RUNNING || state == TERMINATING)
+    << state;
+
+  if (!update.has_uuid()) {
+    LOG(WARNING) << "Ignoring status update " << update << " without 'uuid'";
     metrics.invalid_status_updates++;
     return;
   }
@@ -2813,7 +2832,7 @@ void Slave::statusUpdate(StatusUpdate update, const UPID& pid)
     // container_status and labels. Remaining fields are discarded.
     TaskStatus statusFromHooks =
       HookManager::slaveTaskStatusDecorator(
-          update.framework_id(), update.status());
+          framework->id(), update.status());
     if (statusFromHooks.has_labels()) {
       update.mutable_status()->mutable_labels()->CopyFrom(
           statusFromHooks.labels());
@@ -2972,7 +2991,7 @@ void Slave::_statusUpdate(
   if (checkpoint) {
     // Ask the status update manager to checkpoint and reliably send the update.
     statusUpdateManager->update(update, info.id(), executorId, containerId)
-      .onAny(defer(self(), &Slave::__statusUpdate, lambda::_1, update, pid));
+      .onAny(defer(self(), &Slave::__statuUpdate, lambda::_1, update, pid));
   } else {
     // Ask the status update manager to just retry the update.
     statusUpdateManager->update(update, info.id())
