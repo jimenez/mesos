@@ -594,9 +594,7 @@ struct HttpConnection
   ::recordio::Encoder<v1::executor::Event> encoder;
 };
 
-
 std::ostream& operator<<(std::ostream& stream, const Executor& executor);
-
 
 // Information describing an executor.
 struct Executor
@@ -618,6 +616,10 @@ struct Executor
   void checkpointTask(const TaskInfo& task);
   void recoverTask(const state::TaskState& state);
   void updateTaskState(const TaskStatus& status);
+
+  friend std::ostream& operator<<(
+      std::ostream& ostream,
+      const Executor& executor);
 
   // Returns true if there are any queued/launched/terminated tasks.
   bool incompleteTasks();
@@ -691,6 +693,7 @@ struct Executor
   //           *                 *       None       Some      Libprocess
   //           *                 *       Some       None            HTTP
   Option<HttpConnection> http;
+
   Option<process::UPID> pid;
 
   // Currently consumed resources.
