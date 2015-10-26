@@ -315,6 +315,9 @@ Future<Response> Slave::Http::executor(const Request& request) const
     }
 
     case executor::Call::UPDATE: {
+      statusUpdate(framework,
+                   executor,
+                   call.update());
       return Accepted();
     }
 

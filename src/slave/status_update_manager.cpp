@@ -76,16 +76,16 @@ public:
   using process::ProcessBase::initialize;
 
   // StatusUpdateManager implementation.
-  void initialize(const function<void(StatusUpdate)>& forward);
+  void initialize(const function<void(executor::Call)>& forward);
 
   Future<Nothing> update(
-      const StatusUpdate& update,
+      const executor::Call& update,
       const SlaveID& slaveId,
       const ExecutorID& executorId,
       const ContainerID& containerId);
 
   Future<Nothing> update(
-      const StatusUpdate& update,
+      const executor::Call& update,
       const SlaveID& slaveId);
 
   Future<bool> acknowledgement(
@@ -105,7 +105,7 @@ public:
 private:
   // Helper function to handle update.
   Future<Nothing> _update(
-      const StatusUpdate& update,
+      const executor::Call& update,
       const SlaveID& slaveId,
       bool checkpoint,
       const Option<ExecutorID>& executorId,
@@ -118,7 +118,8 @@ private:
   // on the 'duration' to check for ACK from the scheduler.
   // NOTE: This should only be used for those messages that expect an
   // ACK (e.g updates from the executor).
-  Timeout forward(const StatusUpdate& update, const Duration& duration);
+  Timeout forward(
+      const executor::Call& update, const Duration& duration);
 
   // Helper functions.
 
@@ -143,7 +144,7 @@ private:
   const Flags flags;
   bool paused;
 
-  function<void(StatusUpdate)> forward_;
+  function<void(executor::Call)> forward_;
 
   hashmap<FrameworkID, hashmap<TaskID, StatusUpdateStream*> > streams;
 };
@@ -165,7 +166,7 @@ StatusUpdateManagerProcess::~StatusUpdateManagerProcess()
 
 
 void StatusUpdateManagerProcess::initialize(
-    const function<void(StatusUpdate)>& forward)
+    const function<void(executor::Call)>& forward)
 {
   forward_ = forward;
 }
@@ -186,7 +187,7 @@ void StatusUpdateManagerProcess::resume()
   foreachkey (const FrameworkID& frameworkId, streams) {
     foreachvalue (StatusUpdateStream* stream, streams[frameworkId]) {
       if (!stream->pending.empty()) {
-        const StatusUpdate& update = stream->pending.front();
+        const executor::Call& call = stream->pending.front();
         LOG(WARNING) << "Resending status update " << update;
         stream->timeout = forward(update, STATUS_UPDATE_RETRY_INTERVAL_MIN);
       }
@@ -292,34 +293,34 @@ void StatusUpdateManagerProcess::cleanup(const FrameworkID& frameworkId)
 
 
 Future<Nothing> StatusUpdateManagerProcess::update(
-    const StatusUpdate& update,
+    const executor::Call& update,
     const SlaveID& slaveId,
     const ExecutorID& executorId,
     const ContainerID& containerId)
 {
-  return _update(update, slaveId, true, executorId, containerId);
+  return _update(call, slaveId, true, executorId, containerId);
 }
 
 
 Future<Nothing> StatusUpdateManagerProcess::update(
-    const StatusUpdate& update,
+    const executor::Call& call,
     const SlaveID& slaveId)
 {
-  return _update(update, slaveId, false, None(), None());
+  return _update(call, slaveId, false, None(), None());
 }
 
 
 Future<Nothing> StatusUpdateManagerProcess::_update(
-    const StatusUpdate& update,
+    const executor::Call& call,
     const SlaveID& slaveId,
     bool checkpoint,
     const Option<ExecutorID>& executorId,
+    const Option<FrameworkID>& frameworkId,
     const Option<ContainerID>& containerId)
 {
-  const TaskID& taskId = update.status().task_id();
-  const FrameworkID& frameworkId = update.framework_id();
+  const TaskID& taskId = call.update.status().task_id();
 
-  LOG(INFO) << "Received status update " << update;
+  LOG(INFO) << "Received status update " << call.update;
 
   // Write the status update to disk and enqueue it to send it to the master.
   // Create/Get the status update stream for this task.
@@ -339,7 +340,7 @@ Future<Nothing> StatusUpdateManagerProcess::_update(
   }
 
   // Handle the status update.
-  Try<bool> result = stream->update(update);
+  Try<bool> result = stream->update(call);
   if (result.isError()) {
     return Failure(result.error());
   }
@@ -354,7 +355,7 @@ Future<Nothing> StatusUpdateManagerProcess::_update(
   // Subsequent status updates will get sent in 'acknowledgement()'.
   if (!paused && stream->pending.size() == 1) {
     CHECK_NONE(stream->timeout);
-    const Result<StatusUpdate>& next = stream->next();
+    const Result<executor::Call>& next = stream->next();
     if (next.isError()) {
       return Failure(next.error());
     }
@@ -368,7 +369,7 @@ Future<Nothing> StatusUpdateManagerProcess::_update(
 
 
 Timeout StatusUpdateManagerProcess::forward(
-    const StatusUpdate& update,
+    const executor::Call& update,
     const Duration& duration)
 {
   CHECK(!paused);
@@ -406,7 +407,7 @@ Future<bool> StatusUpdateManagerProcess::acknowledgement(
   }
 
   // Get the corresponding update for this ACK.
-  const Result<StatusUpdate>& update = stream->next();
+  const Result<executor::Call::Update>& update = stream->next();
   if (update.isError()) {
     return Failure(update.error());
   }
@@ -436,7 +437,7 @@ Future<bool> StatusUpdateManagerProcess::acknowledgement(
   stream->timeout = None();
 
   // Get the next update in the queue.
-  const Result<StatusUpdate>& next = stream->next();
+  const Result<executor::Call::Update>& next = stream->next();
   if (next.isError()) {
     return Failure(next.error());
   }
@@ -473,7 +474,7 @@ void StatusUpdateManagerProcess::timeout(const Duration& duration)
       if (!stream->pending.empty()) {
         CHECK_SOME(stream->timeout);
         if (stream->timeout.get().expired()) {
-          const StatusUpdate& update = stream->pending.front();
+          const executor::Call::Update& update = stream->pending.front();
           LOG(WARNING) << "Resending status update " << update;
 
           // Bounded exponential backoff.
@@ -488,7 +489,7 @@ void StatusUpdateManagerProcess::timeout(const Duration& duration)
 }
 
 
-  StatusUpdateStream* StatusUpdateManagerProcess::createStatusUpdateStream(
+StatusUpdateStream* StatusUpdateManagerProcess::createStatusUpdateStream(
     const TaskID& taskId,
     const FrameworkID& frameworkId,
     const SlaveID& slaveId,
@@ -564,14 +565,14 @@ StatusUpdateManager::~StatusUpdateManager()
 
 
 void StatusUpdateManager::initialize(
-    const function<void(StatusUpdate)>& forward)
+    const function<void(executor::Call)>& forward)
 {
   dispatch(process, &StatusUpdateManagerProcess::initialize, forward);
 }
 
 
 Future<Nothing> StatusUpdateManager::update(
-    const StatusUpdate& update,
+    const executor::Call::Update& update,
     const SlaveID& slaveId,
     const ExecutorID& executorId,
     const ContainerID& containerId)
@@ -587,7 +588,7 @@ Future<Nothing> StatusUpdateManager::update(
 
 
 Future<Nothing> StatusUpdateManager::update(
-    const StatusUpdate& update,
+    const executor::Call::Update& update,
     const SlaveID& slaveId)
 {
   return dispatch(
@@ -705,7 +706,7 @@ StatusUpdateStream::~StatusUpdateStream()
 }
 
 
-Try<bool> StatusUpdateStream::update(const StatusUpdate& update)
+Try<bool> StatusUpdateStream::update(const executor::Call::Update& update)
 {
   if (error.isSome()) {
     return Error(error.get());
@@ -746,7 +747,7 @@ Try<bool> StatusUpdateStream::acknowledgement(
     const TaskID& taskId,
     const FrameworkID& frameworkId,
     const UUID& uuid,
-    const StatusUpdate& update)
+    const executor::Call::Update& update)
 {
   if (error.isSome()) {
     return Error(error.get());
@@ -777,7 +778,7 @@ Try<bool> StatusUpdateStream::acknowledgement(
 }
 
 
-Result<StatusUpdate> StatusUpdateStream::next()
+Result<executor::Call::Update> StatusUpdateStream::next()
 {
   if (error.isSome()) {
     return Error(error.get());
@@ -792,7 +793,7 @@ Result<StatusUpdate> StatusUpdateStream::next()
 
 
 Try<Nothing> StatusUpdateStream::replay(
-    const std::vector<StatusUpdate>& updates,
+    const std::vector<executor::Call::Update>& updates,
     const hashset<UUID>& acks)
 {
   if (error.isSome()) {
@@ -801,7 +802,7 @@ Try<Nothing> StatusUpdateStream::replay(
 
   VLOG(1) << "Replaying status update stream for task " << taskId;
 
-  foreach (const StatusUpdate& update, updates) {
+  foreach (const executor::Call::Update& update, updates) {
     // Handle the update.
     _handle(update, StatusUpdateRecord::UPDATE);
 
@@ -816,7 +817,7 @@ Try<Nothing> StatusUpdateStream::replay(
 
 
 Try<Nothing> StatusUpdateStream::handle(
-    const StatusUpdate& update,
+    const executor::Call::Update& update,
     const StatusUpdateRecord::Type& type)
 {
   CHECK_NONE(error);
@@ -852,7 +853,7 @@ Try<Nothing> StatusUpdateStream::handle(
 
 
 void StatusUpdateStream::_handle(
-    const StatusUpdate& update,
+    const executor::Call::Update& update,
     const StatusUpdateRecord::Type& type)
 {
   CHECK_NONE(error);

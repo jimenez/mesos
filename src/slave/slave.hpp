@@ -202,12 +202,15 @@ public:
   // to ensure source field is set.
   void statusUpdate(StatusUpdate update, const process::UPID& pid);
 
+  void statusUpdate(Framework* framework,
+                    Executor* executor,
+                    const executor::Call::Update& update);
+
   // Continue handling the status update after optionally updating the
   // container's resources.
   void _statusUpdate(
       const Option<Future<Nothing>>& future,
-      const StatusUpdate& update,
-      const UPID& pid,
+      const executor::Call::Update& update,
       const ExecutorID& executorId,
       const ContainerID& containerId,
       bool checkpoint);
@@ -217,13 +220,12 @@ public:
   // acknowledgment is sent to the executor.
   void __statusUpdate(
       const process::Future<Nothing>& future,
-      const StatusUpdate& update,
-      const process::UPID& pid);
+      executor::Call::Update update);
 
   // This is called by status update manager to forward a status
   // update to the master. Note that the latest state of the task is
   // added to the update before forwarding.
-  void forward(StatusUpdate update);
+  void forward(executor::Call::Update update);
 
   void statusUpdateAcknowledgement(
       const process::UPID& from,

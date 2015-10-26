@@ -65,7 +65,8 @@ public:
 
   // Expects a callback 'forward' which gets called whenever there is
   // a new status update that needs to be forwarded to the master.
-  void initialize(const lambda::function<void(StatusUpdate)>& forward);
+  void initialize(
+      const lambda::function<void(executor::Call::Update)>& forward);
 
   // TODO(vinod): Come up with better names/signatures for the
   // checkpointing and non-checkpointing 'update()' functions.
@@ -77,7 +78,7 @@ public:
   // @return Whether the update is handled successfully
   // (e.g. checkpointed).
   process::Future<Nothing> update(
-      const StatusUpdate& update,
+      const executor::Call::Update& update,
       const SlaveID& slaveId,
       const ExecutorID& executorId,
       const ContainerID& containerId);
@@ -86,7 +87,7 @@ public:
   // alive), but does not checkpoint the update.
   // @return Whether the update is handled successfully.
   process::Future<Nothing> update(
-      const StatusUpdate& update,
+      const executor::Call::Update& update,
       const SlaveID& slaveId);
 
   // Checkpoints the status update to disk if necessary.
@@ -147,7 +148,7 @@ struct StatusUpdateStream
   // @return   True if the update is successfully handled.
   //           False if the update is a duplicate.
   //           Error Any errors (e.g., checkpointing).
-  Try<bool> update(const StatusUpdate& update);
+  Try<bool> update(const executor::Call::Update& update);
 
   // This function handles the ACK, checkpointing if necessary.
   // @return   True if the acknowledgement is successfully handled.
@@ -157,22 +158,22 @@ struct StatusUpdateStream
       const TaskID& taskId,
       const FrameworkID& frameworkId,
       const UUID& uuid,
-      const StatusUpdate& update);
+      const executor::Call::Update& update);
 
   // Returns the next update (or none, if empty) in the queue.
-  Result<StatusUpdate> next();
+  Result<executor::Call::Update> next();
 
   // Replays the stream by sequentially handling an update and its
   // corresponding ACK, if present.
   Try<Nothing> replay(
-      const std::vector<StatusUpdate>& updates,
+      const std::vector<executor::Call::Update>& updates,
       const hashset<UUID>& acks);
 
   // TODO(vinod): Explore semantics to make these private.
   const bool checkpoint;
   bool terminated;
   Option<process::Timeout> timeout; // Timeout for resending status update.
-  std::queue<StatusUpdate> pending;
+  std::queue<executor::Call::Update> pending;
 
 private:
   // Handles the status update and writes it to disk, if necessary.
@@ -182,11 +183,11 @@ private:
   // too much of an overhead to spin up a new libprocess per status update?
   // A better solution might be to be have async write capability for file io.
   Try<Nothing> handle(
-      const StatusUpdate& update,
+      const executor::Call::Update& update,
       const StatusUpdateRecord::Type& type);
 
   void _handle(
-      const StatusUpdate& update,
+      const executor::Call::Update& update,
       const StatusUpdateRecord::Type& type);
 
   const TaskID taskId;
